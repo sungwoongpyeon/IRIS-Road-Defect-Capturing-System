@@ -63,8 +63,6 @@ export default function Header() {
     return userEmail;
   }
 
-  
-
   return (
     <div className={classes.root}>
 

@@ -23,9 +23,9 @@ class DataItem extends Component {
                     this.props.isActive === this.props.index ? { backgroundColor: '#3F51B5', color: 'white' } : {}
                 }
             >
-                <TableCell>
+                <TableCell align="center" >
                     <IconButton style={
-                        this.props.isActive === this.props.index ? { color: 'white' } : { color: '#3F51B5' }} aria-label="edit" onClick={this.props.edit}>
+                        this.props.isActive === this.props.index ? { color: 'white' } : { color: '#3F51B5' } } aria-label="edit" onClick={this.props.edit}>
                         <EditIcon
                             size="medium"
                         />
@@ -44,20 +44,14 @@ class DataItem extends Component {
                             />
                         </IconButton> : ""}
                 </TableCell >
-                <TableCell style={
-                    this.props.isActive === this.props.index ? { color: 'white' } : {}} align="center">{this.props.driver}</TableCell >
-                <TableCell style={
-                    this.props.isActive === this.props.index ? { color: 'white' } : {}
-                } align="center">{this.props.plate}</TableCell >
+                
                 <TableCell style={
                     this.props.isActive === this.props.index ? { color: 'white' } : {}
                 } align="center">{this.props.type}</TableCell >
+                
                 <TableCell style={
                     this.props.isActive === this.props.index ? { color: 'white' } : {}
-                } align="center">{this.props.address}</TableCell >
-                <TableCell style={
-                    this.props.isActive === this.props.index ? { color: 'white' } : {}
-                } align="center">{this.props.timeText}</TableCell >
+                } align="center">{this.props.date_time}</TableCell >
             </TableRow >
         );
     }

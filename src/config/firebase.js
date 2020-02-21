@@ -4,6 +4,7 @@ import "firebase/storage";
 
 const app = firebase.initializeApp({
     //Firebase config key goes here 
+    
 });
 
 export default app;

@@ -18,13 +18,15 @@ import TableRow from '@material-ui/core/TableRow';
 import Paper from '@material-ui/core/Paper';
 import TextField from '@material-ui/core/TextField';
 import SearchIcon from '@material-ui/icons/Search';
-import Fab from '@material-ui/core/Fab';
-import AddIcon from '@material-ui/icons/Add';
 import DataItem from './DataItem';
 import AddDialog from './AddDialog';
-import EditDialog from './EditDialog';
-import { CircularProgress } from '@material-ui/core';
+import { Dialog, DialogContent, DialogTitle } from '@material-ui/core';
+import Select from '@material-ui/core/Select';
+import MenuItem from '@material-ui/core/MenuItem';
+import InputLabel from '@material-ui/core/InputLabel';
 import Button from '@material-ui/core/Button';
+// import EditDialog from './EditDialog';
+import { CircularProgress } from '@material-ui/core';
 
 // import app from '../config/firebase'
 
@@ -90,16 +92,17 @@ const useStyles = theme => ({
 //Search function query
 function searchingFor(searchTerm) {
   return function (x) {
-    if (x.driver.toLowerCase().includes(searchTerm.toLowerCase())
-      || x.plate.toLowerCase().includes(searchTerm.toLowerCase())
-      || x.type.toLowerCase().includes(searchTerm.toLowerCase())
-      // || x.address.toLowerCase().includes(searchTerm.toLowerCase())
-      || x.timeText.toLowerCase().includes(searchTerm.toLowerCase())) {
-      return true
-    }
-    return false;
+    // if (
+    //   x.type.toLowerCase().includes(searchTerm.toLowerCase())
+    //   || x.date_time.toLowerCase().includes(searchTerm.toLowerCase())
+    //   ) {
+    //   return true;
+    // }
+    // return false;
+    return true;
   }
 }
+
 // firebase url
 const databaseURL = "https://road-defect.firebaseio.com";
 
@@ -116,29 +119,28 @@ class Home extends React.Component {
       isVideoClicked: false,
       isActive: '',
       searchTerm: '',
-      address: '',
-      driver: '',
-      plate: '',
-      timeText: '',
+      accelerometer: [],
+      device_serial_number: '',
+      selectedDefectData: [],
+      date_time: '',
       type: '',
       latitude: '',
       longitude: '',
       url: '',
       heading: '',
-      userID: '',
-      timeStamp: '',
-      description: '',
+      image: '',
       editId: '',
       loading: true,
       driverSort: true,
       plateSort: true,
       typeSort: true,
       addressSort: true,
-      timeTextSort: true,
+      dateTimeSort: true,
       tempList: [],
       sequentialPlayList: [],
       count: 0,
       isPlayImage: false,
+      endPointCount:0,
     }
   }
 
@@ -162,28 +164,28 @@ class Home extends React.Component {
         Object.assign(defectData[key], { id: key });
         defectDataArray.push(defectData[key]);
       }
-
+      console.log(defectDataArray);
       this.setState({ defectData: defectDataArray, loading: false });
     });
   }
 
   //RESTful API POST (CREATE)
-  _post(addedItem) {
-    return fetch(`${databaseURL}/roadDefect.json`, {
-      method: 'POST',
-      body: JSON.stringify(addedItem)
-    }).then(res => {
-      if (res.status !== 200) {
-        throw new Error(res.statusText);
-      }
-      return res.json();
-    }).then(data => {
-      let nextState = this.state.defectData;
-      Object.assign(addedItem, { id: data.name });
-      nextState.push(addedItem);
-      this.setState({ defectData: nextState });
-    });
-  }
+  // _post(addedItem) {
+  //   return fetch(`${databaseURL}/roadDefect.json`, {
+  //     method: 'POST',
+  //     body: JSON.stringify(addedItem)
+  //   }).then(res => {
+  //     if (res.status !== 200) {
+  //       throw new Error(res.statusText);
+  //     }
+  //     return res.json();
+  //   }).then(data => {
+  //     let nextState = this.state.defectData;
+  //     Object.assign(addedItem, { id: data.name });
+  //     nextState.push(addedItem);
+  //     this.setState({ defectData: nextState });
+  //   });
+  // }
 
   //RESTful API PUT (UPDATE)
   _put(id, editedItem) {
@@ -226,6 +228,7 @@ class Home extends React.Component {
     this.myInterval = setInterval(() => {
       if (this.state.count < this.state.sequentialPlayList.length) {
         this.setState(prevState => ({ count: prevState.count + 1 }));
+        // console.log(this.state.count);
       } else {
         this.setState(() => ({ count: 0 }));
       }
@@ -245,55 +248,47 @@ class Home extends React.Component {
   }
 
   sequentialPlayImage() {
+
     this.setState(() => ({ count: 0 }));
 
     this.myInterval = setInterval(() => {
       if (this.state.count < this.state.sequentialPlayList.length) {
-        this.setState({ selectedData: this.state.sequentialPlayList[this.state.count], isVideoClicked: true, isActive: this.state.isActive + 1 });
+        this.setState({
+          editId: this.state.sequentialPlayList[this.state.count].id,
+          date_time: this.state.sequentialPlayList[this.state.count].date_time,
+          type: this.state.sequentialPlayList[this.state.count].type,
+          url: this.state.sequentialPlayList[this.state.count].url,
+          accelerometer: this.state.sequentialPlayList[this.state.count].accelerometer,
+          device_serial_number: this.state.sequentialPlayList[this.state.count].device_serial_number,
+          heading: this.state.sequentialPlayList[this.state.count].heading,
+          image: this.state.sequentialPlayList[this.state.count].image,
+          latitude: this.state.sequentialPlayList[this.state.count].latitude,
+          longitude: this.state.sequentialPlayList[this.state.count].longitude,
+          url: this.state.sequentialPlayList[this.state.count].url,
+          selectedData: this.state.sequentialPlayList[this.state.count],
+          isVideoClicked: true,
+          isActive: this.state.isActive + 1,
+          endPointCount:this.state.count,
+        });
       } else {
         clearInterval(this.myInterval);
-        this.setState({ selectedData: null, isVideoClicked: false, isActive: null });
+        this.setState({ selectedData: null, isVideoClicked: false, isActive: null, editDialog:false });
       }
     }, 2000);
   }
 
   stopSequentialPlay() {
     clearInterval(this.myInterval);
-    this.setState(() => ({ count: 0, selectedData: null, isVideoClicked: false, isActive: null }));
+    console.log(this.state.endPointCount);
+    let tempList = this.state.sequentialPlayList.slice(this.state.endPointCount, this.state.sequentialPlayList.length);
+    this.setState(() => ({ count: 0, sequentialPlayList: tempList, }));
   }
-
-  handleDialogToggle = () => this.setState({
-    dialog: !this.state.dialog,
-    address: '',
-    driver: '',
-    plate: '',
-    timeText: '',
-    type: '',
-    latitude: '',
-    longitude: '',
-    editId: '',
-    url: '',
-    description: '',
-    heading: '',
-    timeStamp: '',
-    userID: '',
-  })
 
   handleEditDialogToggle = () => this.setState({
     editDialog: !this.state.editDialog,
-    address: '',
-    driver: '',
-    plate: '',
-    timeText: '',
+    date_time: '',
     type: '',
-    latitude: '',
-    longitude: '',
     editId: '',
-    url: '',
-    description: '',
-    heading: '',
-    timeStamp: '',
-    userID: '',
   })
 
   handleValueChange = (e) => {
@@ -302,59 +297,46 @@ class Home extends React.Component {
     this.setState(nextState);
   }
 
-  handleSubmit = (mode) => {
-    let today = new Date();
-    let date = today.getHours() + ":" + today.getMinutes() + ":" + today.getSeconds();
-    let timeStamp = today.getTime();
-
+  handleSubmit = () => {
     let modeItem = {
-      address: this.state.address,
-      driver: this.state.driver,
-      plate: this.state.plate,
-      timeText: this.state.timeText + " " + date,
-      timeStamp: this.state.timeStamp,
-      heading: this.state.heading,
-      userID: this.state.userID,
+      accelerometer: this.state.accelerometer,
       type: this.state.type,
+      date_time: this.state.date_time,
+      device_serial_number: this.state.device_serial_number,
+      heading: this.state.heading,
+      image: this.state.image,
       latitude: this.state.latitude,
       longitude: this.state.longitude,
       url: this.state.url,
-      description: this.state.description
     }
 
-    if (mode === 'add') {
-      //REST API POST request
-      modeItem.timeStamp = timeStamp;
-
-      this._post(modeItem);
-      this.handleDialogToggle();
-    } else if (mode === 'edit') {
-      //REST API POST request
-      modeItem.timeText = this.state.timeText;
-
-      this._put(this.state.editId, modeItem);
-      this.handleEditDialogToggle();
-    }
+    //REST API POST request
+    this._put(this.state.editId, modeItem);
   }
 
   editItem(index) {
     this.handleEditDialogToggle();
+    let tempList = this.state.defectData.slice(index, this.state.defectData.length);
     const editTarget = this.state.defectData[index];
     this.setState({
+      editDialog: true,
       editId: editTarget.id,
-      address: editTarget.address,
-      driver: editTarget.driver,
-      plate: editTarget.plate,
-      timeText: editTarget.timeText,
+      date_time: editTarget.date_time,
       type: editTarget.type,
-      timeStamp: editTarget.timeStamp,
+      url: editTarget.url,
+      accelerometer: editTarget.accelerometer,
+      device_serial_number: editTarget.device_serial_number,
       heading: editTarget.heading,
-      userID: editTarget.userID,
+      image: editTarget.image,
       latitude: editTarget.latitude,
       longitude: editTarget.longitude,
       url: editTarget.url,
-      description: editTarget.description,
+      selectedData: editTarget,
+      isVideoClicked: true, //
+      sequentialPlayList: tempList,
+      isActive: index,
     });
+
   }
 
   //delete event handler
@@ -375,70 +357,6 @@ class Home extends React.Component {
     this.setState({
       searchTerm: e.target.value,
     });
-  }
-
-  // // sort by video url
-  // toggleActionSoring() {
-  //   if (this.state.action) {
-  //     const filteredData = this.state.defectData.filter(data => data.url.length > 0);
-  //     this.setState({ defectData: filteredData });
-  //   }
-  // }
-
-  // sort by driver name
-  toggleDriverSorting() {
-    if (this.state.driverSort) {
-      this.setState({
-        defectData: this.state.defectData.sort(function (a, b) {
-          let x = a.driver.toLowerCase();
-          let y = b.driver.toLowerCase();
-          if (x < y) { return -1; }
-          if (x > y) { return 1; }
-          return 0;
-        }),
-        driverSort: !this.state.driverSort,
-      });
-
-    } else {
-      this.setState({
-        defectData: this.state.defectData.sort(function (a, b) {
-          let x = a.driver.toLowerCase();
-          let y = b.driver.toLowerCase();
-          if (x > y) { return -1; }
-          if (x < y) { return 1; }
-          return 0;
-        }),
-        driverSort: !this.state.driverSort,
-      });
-    }
-  }
-
-  // sort by plate
-  togglePlateSorting() {
-    if (this.state.plateSort) {
-      this.setState({
-        defectData: this.state.defectData.sort(function (a, b) {
-          let x = a.plate.toLowerCase();
-          let y = b.plate.toLowerCase();
-          if (x < y) { return -1; }
-          if (x > y) { return 1; }
-          return 0;
-        }),
-        plateSort: !this.state.plateSort,
-      });
-
-    } else {
-      this.setState({
-        defectData: this.state.defectData.sort(function (a, b) {
-          let x = a.plate.toLowerCase();
-          let y = b.plate.toLowerCase();
-          if (x > y) { return -1; }
-          if (x < y) { return 1; }
-          return 0;
-        }),
-        plateSort: !this.state.plateSort,
-      });
-    }
   }
 
   // sort by type
@@ -469,62 +387,32 @@ class Home extends React.Component {
     }
   }
 
-  // sort by address
-  toggleAddressSorting() {
-    // if (this.state.addressSort) {
-    //   this.setState({
-    //     defectData: this.state.defectData.sort(function (a, b) {
-    //       let x = a.address.toLowerCase();
-    //       let y = b.address.toLowerCase();
-    //       if (x < y) { return -1; }
-    //       if (x > y) { return 1; }
-    //       return 0;
-    //     }),
-    //     addressSort: !this.state.addressSort,
-    //   });
-
-    // } else {
-    //   this.setState({
-    //     defectData: this.state.defectData.sort(function (a, b) {
-    //       let x = a.address.toLowerCase();
-    //       let y = b.address.toLowerCase();
-    //       if (x > y) { return -1; }
-    //       if (x < y) { return 1; }
-    //       return 0;
-    //     }),
-    //     addressSort: !this.state.addressSort,
-    //   });
-    // }
-  }
-
   // sort by timeText
   toggletimeTextSorting() {
-    if (this.state.timeTextSort) {
+    if (this.state.dateTimeSort) {
       this.setState({
         defectData: this.state.defectData.sort(function (a, b) {
-          let x = a.timeText.toLowerCase();
-          let y = b.timeText.toLowerCase();
+          let x = a.date_time.toLowerCase();
+          let y = b.date_time.toLowerCase();
           if (x < y) { return -1; }
           if (x > y) { return 1; }
           return 0;
         }),
-        timeTextSort: !this.state.timeTextSort
+        dateTimeSort: !this.state.dateTimeSort
       });
 
     } else {
       this.setState({
         defectData: this.state.defectData.sort(function (a, b) {
-          let x = a.timeText.toLowerCase();
-          let y = b.timeText.toLowerCase();
+          let x = a.date_time.toLowerCase();
+          let y = b.date_time.toLowerCase();
           if (x > y) { return -1; }
           if (x < y) { return 1; }
           return 0;
         }),
-        timeTextSort: !this.state.timeTextSort
+        dateTimeSort: !this.state.dateTimeSort
       });
     }
-
-
   }
 
   render() {
@@ -566,7 +454,7 @@ class Home extends React.Component {
                         </Grid>
                       </Grid>
                     </div>
-                    <div className={classes.searchArea}>
+                    {/* <div className={classes.searchArea}>
                       <Grid container spacing={1}>
                         <Grid item>
                           <Button
@@ -577,39 +465,9 @@ class Home extends React.Component {
                           >
                             Start
                           </Button>
-
-                          <Button
-                            style={{ marginRight: '5px' }}
-                            variant="contained"
-                            color="secondary"
-                            onClick={this.stopSequentialPlay.bind(this)}
-                          >
-                            Stop
-                          </Button>
-                          <Fab
-                            color="primary"
-                            aria-label="add"
-                            size='small'
-                            onClick={this.handleDialogToggle}
-                          >
-                            <AddIcon />
-                          </Fab>
-                          <AddDialog
-                            dialog={this.state.dialog}
-                            handleDialogToggle={this.handleDialogToggle}
-                            address={this.state.address}
-                            driver={this.state.driver}
-                            plate={this.state.plate}
-                            timeText={this.state.timeText}
-                            type={this.state.type}
-                            description={this.state.description}
-                            handleValueChange={this.handleValueChange}
-                            handleChange={this.handleChange.bind(this)}
-                            handleSubmit={this.handleSubmit.bind(this, 'add')}
-                          />
                         </Grid>
                       </Grid>
-                    </div>
+                    </div> */}
                   </Grid>
                   {/*End Search & Add Area */}
                   {/* Data Table */}
@@ -619,11 +477,8 @@ class Home extends React.Component {
                         <Table aria-label="caption table">
                           <TableHead>
                             <TableRow className={classes.tableHeader}>
-                              <TableCell className={classes.tableHeaderFont} align="center" >Action</TableCell>
-                              <TableCell className={classes.tableHeaderFont} align="center" onClick={this.toggleDriverSorting.bind(this)}>Driver</TableCell>
-                              <TableCell className={classes.tableHeaderFont} align="center" onClick={this.togglePlateSorting.bind(this)}>Plate #</TableCell>
+                              <TableCell className={classes.tableHeaderFont} align="center">Action</TableCell>
                               <TableCell className={classes.tableHeaderFont} align="center" onClick={this.toggletypeSorting.bind(this)}>Type</TableCell>
-                              <TableCell className={classes.tableHeaderFont} align="center" onClick={this.toggleAddressSorting.bind(this)}>Address</TableCell>
                               <TableCell className={classes.tableHeaderFont} align="center" onClick={this.toggletimeTextSorting.bind(this)}>Time</TableCell>
                             </TableRow>
                           </TableHead>
@@ -632,11 +487,8 @@ class Home extends React.Component {
                               this.state.defectData.filter(searchingFor(this.state.searchTerm)).map((item, index) => {
                                 return <DataItem
                                   key={item.id}
-                                  driver={item.driver}
-                                  plate={item.plate}
                                   type={item.type}
-                                  address={item.address}
-                                  timeText={item.timeText}
+                                  date_time={item.date_time}
                                   url={item.url}
                                   edit={this.editItem.bind(this, index)}
                                   delete={this.deleteItem.bind(this, index)}
@@ -647,22 +499,85 @@ class Home extends React.Component {
                               })
                             }
                           </TableBody>
+                          {/* Edit dialog box */}
+                          <Dialog
+                            fullWidth
+                            open={this.state.editDialog}
+                            onClose={this.state.handleEditDialogToggle}>
+                            <DialogTitle>
+                              Edit Information
+                              <Button
+                                style={{ marginLeft: '15px' }}
+                                variant="contained"
+                                color="primary"
+                                onClick={this.sequentialPlayImage.bind(this)}
+                              >Start</Button>
+                              <Button
+                                style={{ marginLeft: '15px' }}
+                                variant="contained"
+                                color="secondary"
+                                onClick={this.stopSequentialPlay.bind(this)}
+                              >Stop</Button>
+                            </DialogTitle>
+                            <DialogContent>
+                              <InputLabel
+                                id="demo-simple-select-outlined-label"
+                              >Defect Type</InputLabel>
+                              <Select
+                                fullWidth
+                                labelId="demo-simple-select-outlined-label"
+                                id="demo-simple-select-outlined"
+                                name="type"
+                                value={this.state.type}
+                                onChange={event => this.handleChange(event.target.value)}
+                              ><br />
+                                <MenuItem value="(P)Pothole paved surface">(P)Pothole paved surface</MenuItem>
+                                <MenuItem value="(PN)Pothole non-paved">(PN)Pothole non-paved</MenuItem>
+                                <MenuItem value="(PS)Pothole shoulder">(PS)Pothole shoulder</MenuItem>
+                                <MenuItem value="(SD)Shoulder Drop-off">(SD)Shoulder Drop-off</MenuItem>
+                                <MenuItem value="(C)Crack">(C)Crack</MenuItem>
+                                <MenuItem value="(D)Debris">(D)Debris</MenuItem>
+                                <MenuItem value="(B)Bridge Deck Spall">(B)Bridge Deck Spall</MenuItem>
+                                <MenuItem value="(RD)Road Discontinuity">(RD)Road Discontinuity</MenuItem>
+                                <MenuItem value="default">Default</MenuItem>
+                              </Select><br />
 
-                          <EditDialog
-                            editDialog={this.state.editDialog}
-                            handleEditDialogToggle={this.handleEditDialogToggle}
-                            handleValueChange={this.handleValueChange}
-                            handleChange={this.handleChange.bind(this)}
-                            handleSubmit={this.handleSubmit.bind(this, 'edit')}
-                            address={this.state.address}
-                            driver={this.state.driver}
-                            plate={this.state.plate}
-                            timeText={this.state.timeText}
-                            type={this.state.type}
-                            latitude={this.state.latitude}
-                            longitude={this.state.longitude}
-                            description={this.state.description}
-                          />
+                              <TextField
+                                fullWidth
+                                label="Time"
+                                type="text"
+                                name="timeText"
+                                value={this.state.date_time}
+                                InputProps={{
+                                  readOnly: true,
+                                }}
+                                onChange={this.handleValueChange} /><br />
+                              <br />
+                              {
+                                (this.state.isVideoClicked) ? (
+                                  <video
+                                    key={this.state.selectedData.url}
+                                    className={classes.videoFrame}
+                                    controls
+                                    autoPlay
+                                    poster={this.state.selectedData.url}
+                                  >
+                                    <source src={this.state.selectedData.url.includes("@") ? "" : this.state.selectedData.url} type="video/mp4" />
+                                    Your browser does not support HTML5 video.
+                                  </video>
+                                ) : (
+                                    <video controls className={classes.videoFrame}>
+                                      <source src={null} type="video/mp4" />
+                                      Your browser does not support HTML5 video.
+                                    </video>
+                                  )
+                              }
+                            </DialogContent>
+                            <DialogContent>
+                              <Button fullWidth className={classes.buttonArea} variant="contained" color="primary" onClick={this.handleSubmit}>Edit</Button>
+                              <Button fullWidth className={classes.buttonArea} variant="outlined" color="primary" onClick={this.handleEditDialogToggle}>Close</Button>
+                            </DialogContent>
+                          </Dialog>
                         </Table>
                       </TableContainer>
                     )
@@ -676,7 +591,7 @@ class Home extends React.Component {
               {/* Right Layout with video player & information Grid */}
               <Grid item xs={12} sm={12} md={6} lg={5}>
                 <Box className={classes.mainRight}>
-                  {/* {(this.state.isVideoClicked) ? <MediaPlayer selectedData={this.state.selectedData} /> : <BlankMediaPlayer />} */}
+
                   {
                     (this.state.isVideoClicked) ? (
                       <video
