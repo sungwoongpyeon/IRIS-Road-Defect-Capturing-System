@@ -92,14 +92,14 @@ const useStyles = theme => ({
 //Search function query
 function searchingFor(searchTerm) {
   return function (x) {
-    // if (
-    //   x.type.toLowerCase().includes(searchTerm.toLowerCase())
-    //   || x.date_time.toLowerCase().includes(searchTerm.toLowerCase())
-    //   ) {
-    //   return true;
-    // }
-    // return false;
-    return true;
+    if (
+      x.type.toLowerCase().includes(searchTerm.toLowerCase())
+      || x.date_time.toLowerCase().includes(searchTerm.toLowerCase())
+      || x.pci.toLowerCase().includes(searchTerm.toLowerCase())
+      ) {
+      return true;
+    }
+    return false;
   }
 }
 
@@ -129,6 +129,7 @@ class Home extends React.Component {
       url: '',
       heading: '',
       image: '',
+      pci:'',
       editId: '',
       loading: true,
       driverSort: true,
@@ -136,6 +137,7 @@ class Home extends React.Component {
       typeSort: true,
       addressSort: true,
       dateTimeSort: true,
+      pciSort: true,
       tempList: [],
       sequentialPlayList: [],
       count: 0,
@@ -228,7 +230,6 @@ class Home extends React.Component {
     this.myInterval = setInterval(() => {
       if (this.state.count < this.state.sequentialPlayList.length) {
         this.setState(prevState => ({ count: prevState.count + 1 }));
-        // console.log(this.state.count);
       } else {
         this.setState(() => ({ count: 0 }));
       }
@@ -265,6 +266,7 @@ class Home extends React.Component {
           latitude: this.state.sequentialPlayList[this.state.count].latitude,
           longitude: this.state.sequentialPlayList[this.state.count].longitude,
           url: this.state.sequentialPlayList[this.state.count].url,
+          pci: this.state.sequentialPlayList[this.state.count].pci,
           selectedData: this.state.sequentialPlayList[this.state.count],
           isVideoClicked: true,
           isActive: this.state.isActive + 1,
@@ -279,7 +281,6 @@ class Home extends React.Component {
 
   stopSequentialPlay() {
     clearInterval(this.myInterval);
-    console.log(this.state.endPointCount);
     let tempList = this.state.sequentialPlayList.slice(this.state.endPointCount, this.state.sequentialPlayList.length);
     this.setState(() => ({ count: 0, sequentialPlayList: tempList, }));
   }
@@ -288,6 +289,7 @@ class Home extends React.Component {
     editDialog: !this.state.editDialog,
     date_time: '',
     type: '',
+    pci:'',
     editId: '',
   })
 
@@ -308,6 +310,7 @@ class Home extends React.Component {
       latitude: this.state.latitude,
       longitude: this.state.longitude,
       url: this.state.url,
+      pci: this.state.pci,
     }
 
     //REST API POST request
@@ -331,6 +334,7 @@ class Home extends React.Component {
       latitude: editTarget.latitude,
       longitude: editTarget.longitude,
       url: editTarget.url,
+      pci: editTarget.pci,
       selectedData: editTarget,
       isVideoClicked: true, //
       sequentialPlayList: tempList,
@@ -353,13 +357,17 @@ class Home extends React.Component {
     this.setState({ type: value });
   }
 
+  handlePCIChange(value) {
+    this.setState({ pci: value });
+  }
+
   handleSearchChange(e) {
     this.setState({
       searchTerm: e.target.value,
     });
   }
 
-  // sort by type
+  // sort by date_time
   toggletypeSorting() {
     if (this.state.typeSort) {
       this.setState({
@@ -411,6 +419,34 @@ class Home extends React.Component {
           return 0;
         }),
         dateTimeSort: !this.state.dateTimeSort
+      });
+    }
+  }
+
+  // sort by pci
+  togglepciSorting() {
+    if (this.state.pciSort) {
+      this.setState({
+        defectData: this.state.defectData.sort(function (a, b) {
+          let x = a.pci.toLowerCase();
+          let y = b.pci.toLowerCase();
+          if (x < y) { return -1; }
+          if (x > y) { return 1; }
+          return 0;
+        }),
+        pciSort: !this.state.pciSort
+      });
+
+    } else {
+      this.setState({
+        defectData: this.state.defectData.sort(function (a, b) {
+          let x = a.pci.toLowerCase();
+          let y = b.pci.toLowerCase();
+          if (x > y) { return -1; }
+          if (x < y) { return 1; }
+          return 0;
+        }),
+        pciSort: !this.state.pciSort
       });
     }
   }
@@ -479,6 +515,7 @@ class Home extends React.Component {
                             <TableRow className={classes.tableHeader}>
                               <TableCell className={classes.tableHeaderFont} align="center">Action</TableCell>
                               <TableCell className={classes.tableHeaderFont} align="center" onClick={this.toggletypeSorting.bind(this)}>Type</TableCell>
+                              <TableCell className={classes.tableHeaderFont} align="center" onClick={this.togglepciSorting.bind(this)}>PCI</TableCell>
                               <TableCell className={classes.tableHeaderFont} align="center" onClick={this.toggletimeTextSorting.bind(this)}>Time</TableCell>
                             </TableRow>
                           </TableHead>
@@ -490,6 +527,7 @@ class Home extends React.Component {
                                   type={item.type}
                                   date_time={item.date_time}
                                   url={item.url}
+                                  pci={item.pci}
                                   edit={this.editItem.bind(this, index)}
                                   delete={this.deleteItem.bind(this, index)}
                                   play={this.playItem.bind(this, index)}
@@ -540,7 +578,22 @@ class Home extends React.Component {
                                 <MenuItem value="(B)Bridge Deck Spall">(B)Bridge Deck Spall</MenuItem>
                                 <MenuItem value="(RD)Road Discontinuity">(RD)Road Discontinuity</MenuItem>
                                 <MenuItem value="default">Default</MenuItem>
-                              </Select><br />
+                              </Select><br /><br />
+                              <InputLabel
+                                id="demo-simple-select-outlined-label"
+                              >PCI</InputLabel>
+                              <Select
+                                fullWidth
+                                labelId="demo-simple-select-outlined-label"
+                                id="demo-simple-select-outlined"
+                                name="pci"
+                                value={this.state.pci}
+                                onChange={event => this.handlePCIChange(event.target.value)}
+                              ><br />
+                                <MenuItem value="good">Good</MenuItem>
+                                <MenuItem value="fair">Fair</MenuItem>
+                                <MenuItem value="poor">Poor</MenuItem>
+                              </Select><br /><br />
 
                               <TextField
                                 fullWidth

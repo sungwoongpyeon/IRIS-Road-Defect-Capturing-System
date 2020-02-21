@@ -48,6 +48,10 @@ class DataItem extends Component {
                 <TableCell style={
                     this.props.isActive === this.props.index ? { color: 'white' } : {}
                 } align="center">{this.props.type}</TableCell >
+
+                <TableCell style={
+                    this.props.isActive === this.props.index ? { color: 'white' } : {}
+                } align="center">{this.props.pci}</TableCell >
                 
                 <TableCell style={
                     this.props.isActive === this.props.index ? { color: 'white' } : {}
