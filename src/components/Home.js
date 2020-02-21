@@ -19,7 +19,6 @@ import Paper from '@material-ui/core/Paper';
 import TextField from '@material-ui/core/TextField';
 import SearchIcon from '@material-ui/icons/Search';
 import DataItem from './DataItem';
-import AddDialog from './AddDialog';
 import { Dialog, DialogContent, DialogTitle } from '@material-ui/core';
 import Select from '@material-ui/core/Select';
 import MenuItem from '@material-ui/core/MenuItem';
@@ -111,6 +110,7 @@ class Home extends React.Component {
     super(props);
 
     this.state = {
+      intervalTime: 15000,
       defectData: [],
       selectedData: null,
       dialog: false,
@@ -143,6 +143,7 @@ class Home extends React.Component {
       count: 0,
       isPlayImage: false,
       endPointCount:0,
+      isPlaying:false,
     }
   }
 
@@ -166,7 +167,6 @@ class Home extends React.Component {
         Object.assign(defectData[key], { id: key });
         defectDataArray.push(defectData[key]);
       }
-      console.log(defectDataArray);
       this.setState({ defectData: defectDataArray, loading: false });
     });
   }
@@ -233,7 +233,7 @@ class Home extends React.Component {
       } else {
         this.setState(() => ({ count: 0 }));
       }
-    }, 2000);
+    }, this.state.intervalTime);
   }
 
   componentWillUnmount() {
@@ -249,8 +249,8 @@ class Home extends React.Component {
   }
 
   sequentialPlayImage() {
-
-    this.setState(() => ({ count: 0 }));
+    
+    this.setState(() => ({ count: 0, isPlaying:true }));
 
     this.myInterval = setInterval(() => {
       if (this.state.count < this.state.sequentialPlayList.length) {
@@ -265,7 +265,6 @@ class Home extends React.Component {
           image: this.state.sequentialPlayList[this.state.count].image,
           latitude: this.state.sequentialPlayList[this.state.count].latitude,
           longitude: this.state.sequentialPlayList[this.state.count].longitude,
-          url: this.state.sequentialPlayList[this.state.count].url,
           pci: this.state.sequentialPlayList[this.state.count].pci,
           selectedData: this.state.sequentialPlayList[this.state.count],
           isVideoClicked: true,
@@ -276,13 +275,13 @@ class Home extends React.Component {
         clearInterval(this.myInterval);
         this.setState({ selectedData: null, isVideoClicked: false, isActive: null, editDialog:false });
       }
-    }, 2000);
+    }, this.state.intervalTime);
   }
 
   stopSequentialPlay() {
     clearInterval(this.myInterval);
     let tempList = this.state.sequentialPlayList.slice(this.state.endPointCount, this.state.sequentialPlayList.length);
-    this.setState(() => ({ count: 0, sequentialPlayList: tempList, }));
+    this.setState(() => ({ count: 0, sequentialPlayList: tempList, isPlaying:false}));
   }
 
   handleEditDialogToggle = () => this.setState({
@@ -333,7 +332,6 @@ class Home extends React.Component {
       image: editTarget.image,
       latitude: editTarget.latitude,
       longitude: editTarget.longitude,
-      url: editTarget.url,
       pci: editTarget.pci,
       selectedData: editTarget,
       isVideoClicked: true, //
@@ -628,7 +626,10 @@ class Home extends React.Component {
                             </DialogContent>
                             <DialogContent>
                               <Button fullWidth className={classes.buttonArea} variant="contained" color="primary" onClick={this.handleSubmit}>Edit</Button>
-                              <Button fullWidth className={classes.buttonArea} variant="outlined" color="primary" onClick={this.handleEditDialogToggle}>Close</Button>
+                              {
+                                this.state.isPlaying ? (<Button fullWidth disabled className={classes.buttonArea} variant="outlined" color="primary" onClick={this.handleEditDialogToggle}>Close</Button>) :
+                                (<Button fullWidth className={classes.buttonArea} variant="outlined" color="primary" onClick={this.handleEditDialogToggle}>Close</Button>)
+                              }
                             </DialogContent>
                           </Dialog>
                         </Table>
