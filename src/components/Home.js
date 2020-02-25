@@ -19,11 +19,12 @@ import Paper from '@material-ui/core/Paper';
 import TextField from '@material-ui/core/TextField';
 import SearchIcon from '@material-ui/icons/Search';
 import DataItem from './DataItem';
-import { Dialog, DialogContent, DialogTitle } from '@material-ui/core';
+import { Dialog, DialogContent, DialogTitle, FormControl, FormLabel, FormControlLabel, FormGroup } from '@material-ui/core';
 import Select from '@material-ui/core/Select';
 import MenuItem from '@material-ui/core/MenuItem';
 import InputLabel from '@material-ui/core/InputLabel';
 import Button from '@material-ui/core/Button';
+import Checkbox from '@material-ui/core/Checkbox'
 // import EditDialog from './EditDialog';
 import { CircularProgress } from '@material-ui/core';
 
@@ -56,7 +57,7 @@ const useStyles = theme => ({
 
   table: {
     minWidth: 300,
-    height: 800,
+    height: 300,
     backgroundColor: '#e8eaf6',
 
   },
@@ -144,10 +145,25 @@ class Home extends React.Component {
       isPlayImage: false,
       endPointCount:0,
       isPlaying:false,
+      preState: null,
+      potholeP: false,
+      potholeNP: false,
+      potholeS: false,
+      shoulderDO: false,
+      crack: false,
+      debris: false,
+      bridge: false,
+      discontinuity: false,
+      default: false,
+      good: false,
+      fair: false,
+      poor: false
+
     }
   }
 
   //RESTful API GET (READ)
+  //temporary change: the first photo is shown at the beginning
   _get() {
     this.setState({
       defectData: [],
@@ -167,7 +183,28 @@ class Home extends React.Component {
         Object.assign(defectData[key], { id: key });
         defectDataArray.push(defectData[key]);
       }
-      this.setState({ defectData: defectDataArray, loading: false });
+      this.setState({ defectData: defectDataArray, loading: false }, 
+        () => {
+          let index = 0
+          this.setState({
+            editId: this.state.defectData[index].id,
+            date_time: this.state.defectData[index].date_time,
+            type: this.state.defectData[index].type,
+            url: this.state.defectData[index].url,
+            accelerometer: this.state.defectData[index].accelerometer,
+            device_serial_number: this.state.defectData[index].device_serial_number,
+            heading: this.state.defectData[index].heading,
+            image: this.state.defectData[index].image,
+            latitude: this.state.defectData[index].latitude,
+            longitude: this.state.defectData[index].longitude,
+            pci: this.state.defectData[index].pci,
+            selectedData: this.state.defectData[index],
+            isVideoClicked: true,
+            // isActive: this.state.isActive + 1,
+            endPointCount:index,
+            count: index}, 
+            () => console.log(`next, count=${this.state.count}`));
+        });
     });
   }
 
@@ -292,6 +329,14 @@ class Home extends React.Component {
     editId: '',
   })
 
+  //on changed hanlde function for type checkboxes
+  handleCheckboxChange = name => event => {
+    this.setState({...this.state, [name]: event.target.checked, type: event.target.value}, 
+      () => {
+        console.log(this.state.type)
+      })
+  }
+
   handleValueChange = (e) => {
     let nextState = {};
     nextState[e.target.name] = e.target.value;
@@ -355,8 +400,9 @@ class Home extends React.Component {
     this.setState({ type: value });
   }
 
-  handlePCIChange(value) {
-    this.setState({ pci: value });
+  //change to function to work with check boxes
+  handlePCIChange = name => event => {
+    this.setState({ ...this.state, [name]: event.target.checked, pci: event.target.value }, () => console.log(this.state.pci));
   }
 
   handleSearchChange(e) {
@@ -449,6 +495,60 @@ class Home extends React.Component {
     }
   }
 
+  //go to pervous photo
+  goBack = () => {
+    console.log(`going back`);
+    if (this.state.count < this.state.defectData.length && this.state.count > 0){
+      let index = this.state.count-1;
+      this.setState({
+        editId: this.state.defectData[index].id,
+        date_time: this.state.defectData[index].date_time,
+        type: this.state.defectData[index].type,
+        url: this.state.defectData[index].url,
+        accelerometer: this.state.defectData[index].accelerometer,
+        device_serial_number: this.state.defectData[index].device_serial_number,
+        heading: this.state.defectData[index].heading,
+        image: this.state.defectData[index].image,
+        latitude: this.state.defectData[index].latitude,
+        longitude: this.state.defectData[index].longitude,
+        pci: this.state.defectData[index].pci,
+        selectedData: this.state.defectData[index],
+        isVideoClicked: true,
+        // isActive: this.state.isActive - 1,
+        endPointCount:index,
+        count: index},
+        () => console.log(`back, count=${this.state.count}`) );
+    }
+  }
+
+  //go to the next photo
+  goNext = () => {
+    if (this.state.count < this.state.defectData.length && this.state.count >= 0){
+      let index = this.state.count + 1;
+      this.setState({
+        editId: this.state.defectData[index].id,
+        date_time: this.state.defectData[index].date_time,
+        type: this.state.defectData[index].type,
+        url: this.state.defectData[index].url,
+        accelerometer: this.state.defectData[index].accelerometer,
+        device_serial_number: this.state.defectData[index].device_serial_number,
+        heading: this.state.defectData[index].heading,
+        image: this.state.defectData[index].image,
+        latitude: this.state.defectData[index].latitude,
+        longitude: this.state.defectData[index].longitude,
+        pci: this.state.defectData[index].pci,
+        selectedData: this.state.defectData[index],
+        isVideoClicked: true,
+        // isActive: this.state.isActive + 1,
+        endPointCount:index,
+        count: index}, 
+        () => console.log(`next, count=${this.state.count}`));
+        if (this.state.good !== false || this.state.fair !== false || this.state.poor !== false) {
+          this.handleSubmit();
+        }
+    }
+  }
+
   render() {
     const { classes } = this.props;
     return (
@@ -461,8 +561,39 @@ class Home extends React.Component {
               container
               direction="row"
             >
+              {/* Right Layout with video player & information Grid */}
+              <Grid item xs={12} sm={12} md={6} lg={5}>
+                <Box className={classes.mainRight}>
+                  {
+                    (this.state.isVideoClicked) ? (
+                      <video
+                        key={this.state.selectedData.url}
+                        className={classes.videoFrame}
+                        controls
+                        autoPlay
+                        poster={this.state.selectedData.url}
+                      >
+                        <source src={this.state.selectedData.url.includes("@") ? "" : this.state.selectedData.url} type="video/mp4" />
+                        Your browser does not support HTML5 video.
+                      </video>
+                    ) : (
+                        <video controls className={classes.videoFrame}>
+                          <source src={null} type="video/mp4" />
+                          Your browser does not support HTML5 video.
+                        </video>
+                      )
+                  }
+
+                  <MyMap
+                    mapData={this.state.defectData}
+                    selectedDataFromTable={this.state.selectedData}
+                  />
+
+                </Box>
+              </Grid>
+
               {/* Left Layout with Table Grid */}
-              <Grid item xs={12} sm={12} md={6} lg={7}>
+              <Grid item xs={12} sm={6} md={6} lg={7}>
                 <Box className={classes.mainLeft}>
                   {/* Search & Add Area */}
                   <Grid
@@ -505,6 +636,7 @@ class Home extends React.Component {
                   </Grid>
                   {/*End Search & Add Area */}
                   {/* Data Table */}
+                  <Grid item xs={12} xm={6}>
                   {
                     this.state.loading ? <CircularProgress color="secondary" /> : (
                       <TableContainer component={Paper} className={classes.table}>
@@ -536,7 +668,7 @@ class Home extends React.Component {
                             }
                           </TableBody>
                           {/* Edit dialog box */}
-                          <Dialog
+                          {/* <Dialog
                             fullWidth
                             open={this.state.editDialog}
                             onClose={this.state.handleEditDialogToggle}>
@@ -631,48 +763,133 @@ class Home extends React.Component {
                                 (<Button fullWidth className={classes.buttonArea} variant="outlined" color="primary" onClick={this.handleEditDialogToggle}>Close</Button>)
                               }
                             </DialogContent>
-                          </Dialog>
+                          </Dialog> */}
                         </Table>
                       </TableContainer>
                     )
                   }
+                  </Grid>
+                  <Grid item xs={12} xm={12}>
+                    Edit Information
+                    <Button
+                      style={{ marginLeft: '15px' }}
+                      variant="contained"
+                      color="primary"
+                      onClick={this.goBack}
+                    >Prevous</Button>
+                    <Button
+                      style={{ marginLeft: '15px' }}
+                      variant="contained"
+                      color="secondary"
+                      onClick={this.goNext}
+                    >Next</Button>
+                    <Grid>
+                    <FormControl component="fieldset" className="classes.formControl">
+                      <FormGroup>
+                        <Grid container direction="row">
+                          <Grid item xs={6} xm={6}>
+                            <FormLabel
+                              id="demo-simple-select-outlined-label"
+                            >Defect Type</FormLabel>
+                            <FormControlLabel
+                              control={<Checkbox checked={this.state.potholeP} onChange={this.handleCheckboxChange("potholeP")} value="(P)Pothole paved surface"  />}
+                              label="(P)Pothole paved surface"
+                            />
+                            <FormControlLabel
+                              control={<Checkbox checked={this.state.potholeNP} onChange={this.handleCheckboxChange("potholeNP")} value="(PN)Pothole non-paved"  />}
+                              label="(PN)Pothole non-paved"
+                            />
+                            <FormControlLabel
+                              control={<Checkbox checked={this.state.potholeS} onChange={this.handleCheckboxChange("potholeS")} value="(PS)Pothole shoulder"  />}
+                              label="(PS)Pothole shoulder"
+                            />
+                            <FormControlLabel
+                              control={<Checkbox checked={this.state.shoulderDO} onChange={this.handleCheckboxChange("shoulderDO")} value="(SD)Shoulder Drop-off"  />}
+                              label="(SD)Shoulder Drop-off"
+                            />
+                            <FormControlLabel
+                              control={<Checkbox checked={this.state.crack} onChange={this.handleCheckboxChange("crack")} value="(C)Crack"  />}
+                              label="(C)Crack"
+                            />
+                            <FormControlLabel
+                              control={<Checkbox checked={this.state.debris} onChange={this.handleCheckboxChange("debris")} value="(D)Debris"  />}
+                              label="(D)Debris"
+                            />
+                            <FormControlLabel
+                              control={<Checkbox checked={this.state.bridge} onChange={this.handleCheckboxChange("bridge")} value="(B)Bridge Deck Spall"  />}
+                              label="(B)Bridge Deck Spall"
+                            />
+                            <FormControlLabel
+                              control={<Checkbox checked={this.state.discontinuity} onChange={this.handleCheckboxChange("discontinuity")} value="(RD)Road Discontinuity"  />}
+                              label="(RD)Road Discontinuity"
+                            />
+                            <FormControlLabel
+                              control={<Checkbox checked={this.state.default} onChange={this.handleCheckboxChange("default")} value="default"  />}
+                              label="default"
+                            />
+                          </Grid>
+                          <Grid item xs={6} xm={6}>
+                            <FormLabel
+                              id="demo-simple-select-outlined-label"
+                            >PCI</FormLabel>
+                            <FormControlLabel
+                              control={<Checkbox checked={this.state.good} onChange={this.handlePCIChange('good')} value="Good"  />}
+                              label="Good"
+                            />
+                            <FormControlLabel
+                              control={<Checkbox checked={this.state.fair} onChange={this.handlePCIChange('fair')} value="Fair"  />}
+                              label="Fair"
+                            />
+                            <FormControlLabel
+                              control={<Checkbox checked={this.state.poor} onChange={this.handlePCIChange('poor')} value="Poor"  />}
+                              label="Poor"
+                            />
+                          </Grid>
+                        {/* <Select
+                          fullWidth
+                          labelId="demo-simple-select-outlined-label"
+                          id="demo-simple-select-outlined"
+                          name="type"
+                          value={this.state.type}
+                          onChange={event => this.handleChange(event.target.value)}
+                        ><br />
+                          <MenuItem value="(P)Pothole paved surface">(P)Pothole paved surface</MenuItem>
+                          <MenuItem value="(PN)Pothole non-paved">(PN)Pothole non-paved</MenuItem>
+                          <MenuItem value="(PS)Pothole shoulder">(PS)Pothole shoulder</MenuItem>
+                          <MenuItem value="(SD)Shoulder Drop-off">(SD)Shoulder Drop-off</MenuItem>
+                          <MenuItem value="(C)Crack">(C)Crack</MenuItem>
+                          <MenuItem value="(D)Debris">(D)Debris</MenuItem>
+                          <MenuItem value="(B)Bridge Deck Spall">(B)Bridge Deck Spall</MenuItem>
+                          <MenuItem value="(RD)Road Discontinuity">(RD)Road Discontinuity</MenuItem>
+                          <MenuItem value="default">Default</MenuItem>
+                        </Select><br /><br /> */}
+                        {/* <InputLabel
+                          id="demo-simple-select-outlined-label"
+                        >PCI</InputLabel>
+                        <Select
+                          fullWidth
+                          labelId="demo-simple-select-outlined-label"
+                          id="demo-simple-select-outlined"
+                          name="pci"
+                          value={this.state.pci}
+                          onChange={event => this.handlePCIChange(event.target.value)}
+                        ><br />
+                          <MenuItem value="good">Good</MenuItem>
+                          <MenuItem value="fair">Fair</MenuItem>
+                          <MenuItem value="poor">Poor</MenuItem>
+                        </Select><br /><br /> */}
+                        </Grid>
+                      </FormGroup>
+                    </FormControl>
+                    </Grid>
+                </Grid>
 
                   {/*End Data Table */}
                 </Box>
               </Grid>
               {/* End Left Layout with Table Grid */}
 
-              {/* Right Layout with video player & information Grid */}
-              <Grid item xs={12} sm={12} md={6} lg={5}>
-                <Box className={classes.mainRight}>
-
-                  {
-                    (this.state.isVideoClicked) ? (
-                      <video
-                        key={this.state.selectedData.url}
-                        className={classes.videoFrame}
-                        controls
-                        autoPlay
-                        poster={this.state.selectedData.url}
-                      >
-                        <source src={this.state.selectedData.url.includes("@") ? "" : this.state.selectedData.url} type="video/mp4" />
-                        Your browser does not support HTML5 video.
-                      </video>
-                    ) : (
-                        <video controls className={classes.videoFrame}>
-                          <source src={null} type="video/mp4" />
-                          Your browser does not support HTML5 video.
-                        </video>
-                      )
-                  }
-
-                  <MyMap
-                    mapData={this.state.defectData}
-                    selectedDataFromTable={this.state.selectedData}
-                  />
-
-                </Box>
-              </Grid>
+              
               {/* End Right Layout with video player & information Grid */}
             </Grid>
           </div>
