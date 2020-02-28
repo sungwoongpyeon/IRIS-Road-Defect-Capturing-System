@@ -18,14 +18,13 @@ import Paper from '@material-ui/core/Paper';
 import TextField from '@material-ui/core/TextField';
 import SearchIcon from '@material-ui/icons/Search';
 import DataItem from './DataItem';
-import { Dialog, DialogContent, DialogTitle, FormControl, FormLabel, FormControlLabel, FormGroup } from '@material-ui/core';
-import Select from '@material-ui/core/Select';
-import MenuItem from '@material-ui/core/MenuItem';
-import InputLabel from '@material-ui/core/InputLabel';
+import { FormControl, FormLabel, FormControlLabel, FormGroup } from '@material-ui/core';
 import Button from '@material-ui/core/Button';
 import Checkbox from '@material-ui/core/Checkbox'
 // import EditDialog from './EditDialog';
 import { CircularProgress } from '@material-ui/core';
+import Select from '@material-ui/core/Select';
+import MenuItem from '@material-ui/core/MenuItem';
 
 // import app from '../config/firebase'
 
@@ -76,14 +75,14 @@ const useStyles = theme => ({
 
   videoFrame: {
     width: '100%',
-    height: 400,
+    height: 500,
     marginTop: 40,
     marginBottom: 20,
   },
 
   myMap: {
     width: '100%',
-    height: 410,
+    height: 300,
   },
 
 });
@@ -95,7 +94,7 @@ function searchingFor(searchTerm) {
       x.type.toLowerCase().includes(searchTerm.toLowerCase())
       || x.date_time.toLowerCase().includes(searchTerm.toLowerCase())
       || x.pci.toLowerCase().includes(searchTerm.toLowerCase())
-      ) {
+    ) {
       return true;
     }
     return false;
@@ -110,12 +109,9 @@ class Home extends React.Component {
     super(props);
 
     this.state = {
-      intervalTime: 15000,
       defectData: [],
+      entireDefectData: [],
       selectedData: null,
-      dialog: false,
-      editDialog: false,
-      action: false,
       isVideoClicked: false,
       isActive: '',
       searchTerm: '',
@@ -129,21 +125,18 @@ class Home extends React.Component {
       url: '',
       heading: '',
       image: '',
-      pci:'',
+      pci: '',
       editId: '',
       loading: true,
-      driverSort: true,
-      plateSort: true,
       typeSort: true,
-      addressSort: true,
-      dateTimeSort: true,
+      dateTimeSort: false,
       pciSort: true,
       tempList: [],
       sequentialPlayList: [],
-      count: 0,
+      count: 0,   //index
       isPlayImage: false,
-      endPointCount:0,
-      isPlaying:false,
+      endPointCount: 0,
+      isPlaying: false,
       preState: null,
       potholeP: false,
       potholeNP: false,
@@ -156,8 +149,8 @@ class Home extends React.Component {
       default: false,
       good: false,
       fair: false,
-      poor: false
-
+      poor: false,
+      numberOfDays: '1',
     }
   }
 
@@ -182,48 +175,17 @@ class Home extends React.Component {
         Object.assign(defectData[key], { id: key });
         defectDataArray.push(defectData[key]);
       }
-      this.setState({ defectData: defectDataArray, loading: false }, 
+
+      this.setState({ defectData: defectDataArray, loading: false },
         () => {
-          let index = 0
-          this.setState({
-            editId: this.state.defectData[index].id,
-            date_time: this.state.defectData[index].date_time,
-            type: this.state.defectData[index].type,
-            url: this.state.defectData[index].url,
-            accelerometer: this.state.defectData[index].accelerometer,
-            device_serial_number: this.state.defectData[index].device_serial_number,
-            heading: this.state.defectData[index].heading,
-            image: this.state.defectData[index].image,
-            latitude: this.state.defectData[index].latitude,
-            longitude: this.state.defectData[index].longitude,
-            pci: this.state.defectData[index].pci,
-            selectedData: this.state.defectData[index],
-            isVideoClicked: true,
-            // isActive: this.state.isActive + 1,
-            endPointCount:index,
-            count: index}, 
-            () => console.log(`next, count=${this.state.count}`));
+          this.toggletimeTextSorting();
+          this.setState({ entireDefectData: this.state.defectData }, () => {
+            //sort by time desc
+            this.filterByDay();
+          })
         });
     });
   }
-
-  //RESTful API POST (CREATE)
-  // _post(addedItem) {
-  //   return fetch(`${databaseURL}/roadDefect.json`, {
-  //     method: 'POST',
-  //     body: JSON.stringify(addedItem)
-  //   }).then(res => {
-  //     if (res.status !== 200) {
-  //       throw new Error(res.statusText);
-  //     }
-  //     return res.json();
-  //   }).then(data => {
-  //     let nextState = this.state.defectData;
-  //     Object.assign(addedItem, { id: data.name });
-  //     nextState.push(addedItem);
-  //     this.setState({ defectData: nextState });
-  //   });
-  // }
 
   //RESTful API PUT (UPDATE)
   _put(id, editedItem) {
@@ -253,8 +215,10 @@ class Home extends React.Component {
     }).then(() => {
       // let nextState = this.state.defectData;
       // delete nextState[index];
-      // this.setState({ defectData: nextState });
-      this._get();
+      // this.setState({ defectData: nextState}, ()=>{
+      //   this.setState({selectedData:this.state.defectData[0]});
+      // });
+      this.setState({ dateTimeSort: false }, () => this._get());
     })
   }
 
@@ -262,75 +226,119 @@ class Home extends React.Component {
   componentDidMount() {
     //will update data array with data from firebase
     this._get();
-
-    this.myInterval = setInterval(() => {
-      if (this.state.count < this.state.sequentialPlayList.length) {
-        this.setState(prevState => ({ count: prevState.count + 1 }));
-      } else {
-        this.setState(() => ({ count: 0 }));
-      }
-    }, this.state.intervalTime);
-  }
-
-  componentWillUnmount() {
-    clearInterval(this.myInterval);
   }
 
   //play video event handler
   playItem(index) {
-    let tempList = this.state.defectData.slice(index, this.state.defectData.length);
-
     const playTarget = this.state.defectData[index];
-    this.setState({ selectedData: playTarget, isVideoClicked: true, sequentialPlayList: tempList, isActive: index });
+    this.setState({ selectedData: playTarget, isVideoClicked: true, isActive: index });
   }
 
-  sequentialPlayImage() {
-    
-    this.setState(() => ({ count: 0, isPlaying:true }));
+  //get format YYYY-mm-dd
+  convertDate(date) {
+    var yyyy = date.getFullYear().toString();
+    var mm = (date.getMonth() + 1).toString();
+    var dd = date.getDate().toString();
 
-    this.myInterval = setInterval(() => {
-      if (this.state.count < this.state.sequentialPlayList.length) {
+    var mmChars = mm.split('');
+    var ddChars = dd.split('');
+
+    return yyyy + '-' + (mmChars[1] ? mm : "0" + mmChars[0]) + '-' + (ddChars[1] ? dd : "0" + ddChars[0]);
+  }
+
+  selectFirstRow() {
+    this.setState({ count: 0 }, () => {
+      if (this.state.defectData.length > 0) {
+        let index = this.state.count;
         this.setState({
-          editId: this.state.sequentialPlayList[this.state.count].id,
-          date_time: this.state.sequentialPlayList[this.state.count].date_time,
-          type: this.state.sequentialPlayList[this.state.count].type,
-          url: this.state.sequentialPlayList[this.state.count].url,
-          accelerometer: this.state.sequentialPlayList[this.state.count].accelerometer,
-          device_serial_number: this.state.sequentialPlayList[this.state.count].device_serial_number,
-          heading: this.state.sequentialPlayList[this.state.count].heading,
-          image: this.state.sequentialPlayList[this.state.count].image,
-          latitude: this.state.sequentialPlayList[this.state.count].latitude,
-          longitude: this.state.sequentialPlayList[this.state.count].longitude,
-          pci: this.state.sequentialPlayList[this.state.count].pci,
-          selectedData: this.state.sequentialPlayList[this.state.count],
+          editId: this.state.defectData[index].id,
+          date_time: this.state.defectData[index].date_time,
+          type: this.state.defectData[index].type,
+          url: this.state.defectData[index].url,
+          accelerometer: this.state.defectData[index].accelerometer,
+          device_serial_number: this.state.defectData[index].device_serial_number,
+          heading: this.state.defectData[index].heading,
+          image: this.state.defectData[index].image,
+          latitude: this.state.defectData[index].latitude,
+          longitude: this.state.defectData[index].longitude,
+          pci: this.state.defectData[index].pci,
+          selectedData: this.state.defectData[index],
           isVideoClicked: true,
-          isActive: this.state.isActive + 1,
-          endPointCount:this.state.count,
-        });
-      } else {
-        clearInterval(this.myInterval);
-        this.setState({ selectedData: null, isVideoClicked: false, isActive: null, editDialog:false });
+          isActive: index,
+        }, () => console.log('First index 0', this.state.defectData[index]));
       }
-    }, this.state.intervalTime);
+    })
   }
 
-  stopSequentialPlay() {
-    clearInterval(this.myInterval);
-    let tempList = this.state.sequentialPlayList.slice(this.state.endPointCount, this.state.sequentialPlayList.length);
-    this.setState(() => ({ count: 0, sequentialPlayList: tempList, isPlaying:false}));
+  //filter data based off the select dropdown list
+  filterByDay() {
+    var filterData = [];
+    var today = this.convertDate(new Date()); //get format YYYY-mm-dd
+    switch (this.state.numberOfDays) {
+      case '1':
+        this.state.entireDefectData.map((data) => {
+          let tempDate = this.convertDate(new Date(data.date_time));  //get format YYYY-mm-dd
+          if (tempDate === today) {
+            filterData.push(data);
+          }
+        })
+        this.selectFirstRow();
+        this.setState({ defectData: filterData });
+        return this.selectFirstRow();
+      case '2':
+        let yesterday = this.convertDate(new Date(new Date().setDate(new Date().getDate() - 1)));
+        this.state.entireDefectData.map((data) => {
+          let tempDate = this.convertDate(new Date(data.date_time));  //get format YYYY-mm-dd
+          if (tempDate === yesterday) {
+            filterData.push(data);
+          }
+        })
+        this.selectFirstRow();
+        return this.setState({ defectData: filterData });
+      case '3':
+        let twoDaysAgo = this.convertDate(new Date(new Date().setDate(new Date().getDate() - 2)));
+        this.state.entireDefectData.map((data) => {
+          let tempDate = this.convertDate(new Date(data.date_time));  //get format YYYY-mm-dd
+          if (tempDate === twoDaysAgo) {
+            filterData.push(data);
+          }
+        })
+        this.selectFirstRow();
+        return this.setState({ defectData: filterData });
+      case '4':
+        let threeDaysAgo = this.convertDate(new Date(new Date().setDate(new Date().getDate() - 3)));
+        this.state.entireDefectData.map((data) => {
+          let tempDate = this.convertDate(new Date(data.date_time));  //get format YYYY-mm-dd
+          if (tempDate === threeDaysAgo) {
+            filterData.push(data);
+          }
+        })
+        this.selectFirstRow();
+        return this.setState({ defectData: filterData });
+      case '5':
+        let fourDaysAgo = this.convertDate(new Date(new Date().setDate(new Date().getDate() - 4)));
+        this.state.entireDefectData.map((data) => {
+          let tempDate = this.convertDate(new Date(data.date_time));  //get format YYYY-mm-dd
+          if (tempDate === fourDaysAgo) {
+            filterData.push(data);
+          }
+        })
+        this.selectFirstRow();
+        return this.setState({ defectData: filterData });
+      case '6':
+        this.selectFirstRow();
+        return this.setState({ defectData: this.state.entireDefectData });
+      default:
+        return null;
+    }
+
+
   }
 
-  handleEditDialogToggle = () => this.setState({
-    editDialog: !this.state.editDialog,
-    date_time: '',
-    type: '',
-    pci:'',
-    editId: '',
-  })
 
   //on changed hanlde function for type checkboxes
   handleCheckboxChange = name => event => {
-    this.setState({...this.state, [name]: event.target.checked, type: event.target.value}, 
+    this.setState({ ...this.state, [name]: event.target.checked, type: event.target.value },
       () => {
         console.log(this.state.type)
       })
@@ -340,6 +348,173 @@ class Home extends React.Component {
     let nextState = {};
     nextState[e.target.name] = e.target.value;
     this.setState(nextState);
+  }
+
+  //delete event handler
+  deleteItem = (index) => {
+    const deleteTarget = this.state.defectData[index];
+    this._delete(index, deleteTarget.id);
+    this.setState({
+      selectedData: this.state.defectData[0],
+    })
+  }
+
+  handleChange(value) {
+    this.setState({ numberOfDays: value }, () => this.filterByDay());
+  }
+
+  //change to function to work with check boxes
+  handlePCIChange = name => event => {
+    this.setState({ ...this.state, [name]: event.target.checked, pci: event.target.value }, () => console.log(this.state.pci));
+  }
+
+  handleSearchChange(e) {
+    this.setState({ searchTerm: e.target.value });
+  }
+
+  // sort by date_time
+  toggletypeSorting() {
+    if (this.state.typeSort) {
+      //asc
+      this.setState({
+        defectData: this.state.defectData.sort(function (a, b) {
+          let x = a.type.toLowerCase();
+          let y = b.type.toLowerCase();
+          if (x < y) { return -1; }
+          if (x > y) { return 1; }
+          return 0;
+        }),
+        typeSort: !this.state.typeSort,
+      });
+    } else {
+      //desc
+      this.setState({
+        defectData: this.state.defectData.sort(function (a, b) {
+          let x = a.type.toLowerCase();
+          let y = b.type.toLowerCase();
+          if (x > y) { return -1; }
+          if (x < y) { return 1; }
+          return 0;
+        }),
+        typeSort: !this.state.typeSort,
+        page: 1,
+      }, () => this.pagination(this.state.defectData, this.state.page, this.state.rows));
+    }
+  }
+
+  // sort by timeText
+  toggletimeTextSorting() {
+    if (this.state.dateTimeSort) {
+      this.setState({
+        defectData: this.state.defectData.sort(function (a, b) {
+          let x = a.date_time.toLowerCase();
+          let y = b.date_time.toLowerCase();
+          if (x < y) { return -1; }
+          if (x > y) { return 1; }
+          return 0;
+        }),
+        dateTimeSort: !this.state.dateTimeSort,
+      });
+
+    } else {
+      this.setState({
+        defectData: this.state.defectData.sort(function (a, b) {
+          let x = a.date_time.toLowerCase();
+          let y = b.date_time.toLowerCase();
+          if (x > y) { return -1; }
+          if (x < y) { return 1; }
+          return 0;
+        }),
+        dateTimeSort: !this.state.dateTimeSort,
+      });
+    }
+  }
+
+  // sort by pci
+  togglepciSorting() {
+    if (this.state.pciSort) {
+      this.setState({
+        defectData: this.state.defectData.sort(function (a, b) {
+          let x = a.pci.toLowerCase();
+          let y = b.pci.toLowerCase();
+          if (x < y) { return -1; }
+          if (x > y) { return 1; }
+          return 0;
+        }),
+        pciSort: !this.state.pciSort,
+      });
+
+    } else {
+      this.setState({
+        defectData: this.state.defectData.sort(function (a, b) {
+          let x = a.pci.toLowerCase();
+          let y = b.pci.toLowerCase();
+          if (x > y) { return -1; }
+          if (x < y) { return 1; }
+          return 0;
+        }),
+        pciSort: !this.state.pciSort,
+      });
+    }
+  }
+
+  //go to pervous photo
+  goBack = () => {
+    console.log(`going back`);
+    if (this.state.count < this.state.defectData.length && this.state.count > 0) {
+      let index = this.state.count - 1;
+      this.setState({
+        editId: this.state.defectData[index].id,
+        date_time: this.state.defectData[index].date_time,
+        type: this.state.defectData[index].type,
+        url: this.state.defectData[index].url,
+        accelerometer: this.state.defectData[index].accelerometer,
+        device_serial_number: this.state.defectData[index].device_serial_number,
+        heading: this.state.defectData[index].heading,
+        image: this.state.defectData[index].image,
+        latitude: this.state.defectData[index].latitude,
+        longitude: this.state.defectData[index].longitude,
+        pci: this.state.defectData[index].pci,
+        selectedData: this.state.defectData[index],
+        isVideoClicked: true,
+        isActive: index,
+        endPointCount: index,
+        count: index
+      }, () => console.log('BACK:', this.state.defectData[this.state.count]));
+    }
+  }
+
+  //go to the next photo
+  goNext = () => {
+    if (this.state.count < this.state.defectData.length - 1 && this.state.count >= 0) {
+      let index = this.state.count + 1;
+      this.setState({
+        editId: this.state.defectData[index].id,
+        date_time: this.state.defectData[index].date_time,
+        type: this.state.defectData[index].type,
+        url: this.state.defectData[index].url,
+        accelerometer: this.state.defectData[index].accelerometer,
+        device_serial_number: this.state.defectData[index].device_serial_number,
+        heading: this.state.defectData[index].heading,
+        image: this.state.defectData[index].image,
+        latitude: this.state.defectData[index].latitude,
+        longitude: this.state.defectData[index].longitude,
+        pci: this.state.defectData[index].pci,
+        selectedData: this.state.defectData[index],
+        isVideoClicked: true,
+        isActive: index,
+        endPointCount: index,
+        count: index,
+      },
+        () => {
+          // console.log(`next, count=${this.state.count}`)
+          console.log('NEXT:', this.state.defectData[this.state.count])
+        });
+
+      if (this.state.good !== false || this.state.fair !== false || this.state.poor !== false) {
+        this.handleSubmit();
+      }
+    }
   }
 
   handleSubmit = () => {
@@ -360,194 +535,6 @@ class Home extends React.Component {
     this._put(this.state.editId, modeItem);
   }
 
-  editItem(index) {
-    this.handleEditDialogToggle();
-    let tempList = this.state.defectData.slice(index, this.state.defectData.length);
-    const editTarget = this.state.defectData[index];
-    this.setState({
-      editDialog: true,
-      editId: editTarget.id,
-      date_time: editTarget.date_time,
-      type: editTarget.type,
-      url: editTarget.url,
-      accelerometer: editTarget.accelerometer,
-      device_serial_number: editTarget.device_serial_number,
-      heading: editTarget.heading,
-      image: editTarget.image,
-      latitude: editTarget.latitude,
-      longitude: editTarget.longitude,
-      pci: editTarget.pci,
-      selectedData: editTarget,
-      isVideoClicked: true, //
-      sequentialPlayList: tempList,
-      isActive: index,
-    });
-
-  }
-
-  //delete event handler
-  deleteItem = (index) => {
-    const deleteTarget = this.state.defectData[index];
-    this._delete(index, deleteTarget.id);
-    this.setState({
-      isVideoClicked: false,
-      selectedData: null,
-    })
-  }
-
-  handleChange(value) {
-    this.setState({ type: value });
-  }
-
-  //change to function to work with check boxes
-  handlePCIChange = name => event => {
-    this.setState({ ...this.state, [name]: event.target.checked, pci: event.target.value }, () => console.log(this.state.pci));
-  }
-
-  handleSearchChange(e) {
-    this.setState({
-      searchTerm: e.target.value,
-    });
-  }
-
-  // sort by date_time
-  toggletypeSorting() {
-    if (this.state.typeSort) {
-      this.setState({
-        defectData: this.state.defectData.sort(function (a, b) {
-          let x = a.type.toLowerCase();
-          let y = b.type.toLowerCase();
-          if (x < y) { return -1; }
-          if (x > y) { return 1; }
-          return 0;
-        }),
-        typeSort: !this.state.typeSort,
-      });
-
-    } else {
-      this.setState({
-        defectData: this.state.defectData.sort(function (a, b) {
-          let x = a.type.toLowerCase();
-          let y = b.type.toLowerCase();
-          if (x > y) { return -1; }
-          if (x < y) { return 1; }
-          return 0;
-        }),
-        typeSort: !this.state.typeSort,
-      });
-    }
-  }
-
-  // sort by timeText
-  toggletimeTextSorting() {
-    if (this.state.dateTimeSort) {
-      this.setState({
-        defectData: this.state.defectData.sort(function (a, b) {
-          let x = a.date_time.toLowerCase();
-          let y = b.date_time.toLowerCase();
-          if (x < y) { return -1; }
-          if (x > y) { return 1; }
-          return 0;
-        }),
-        dateTimeSort: !this.state.dateTimeSort
-      });
-
-    } else {
-      this.setState({
-        defectData: this.state.defectData.sort(function (a, b) {
-          let x = a.date_time.toLowerCase();
-          let y = b.date_time.toLowerCase();
-          if (x > y) { return -1; }
-          if (x < y) { return 1; }
-          return 0;
-        }),
-        dateTimeSort: !this.state.dateTimeSort
-      });
-    }
-  }
-
-  // sort by pci
-  togglepciSorting() {
-    if (this.state.pciSort) {
-      this.setState({
-        defectData: this.state.defectData.sort(function (a, b) {
-          let x = a.pci.toLowerCase();
-          let y = b.pci.toLowerCase();
-          if (x < y) { return -1; }
-          if (x > y) { return 1; }
-          return 0;
-        }),
-        pciSort: !this.state.pciSort
-      });
-
-    } else {
-      this.setState({
-        defectData: this.state.defectData.sort(function (a, b) {
-          let x = a.pci.toLowerCase();
-          let y = b.pci.toLowerCase();
-          if (x > y) { return -1; }
-          if (x < y) { return 1; }
-          return 0;
-        }),
-        pciSort: !this.state.pciSort
-      });
-    }
-  }
-
-  //go to pervous photo
-  goBack = () => {
-    console.log(`going back`);
-    if (this.state.count < this.state.defectData.length && this.state.count > 0){
-      let index = this.state.count-1;
-      this.setState({
-        editId: this.state.defectData[index].id,
-        date_time: this.state.defectData[index].date_time,
-        type: this.state.defectData[index].type,
-        url: this.state.defectData[index].url,
-        accelerometer: this.state.defectData[index].accelerometer,
-        device_serial_number: this.state.defectData[index].device_serial_number,
-        heading: this.state.defectData[index].heading,
-        image: this.state.defectData[index].image,
-        latitude: this.state.defectData[index].latitude,
-        longitude: this.state.defectData[index].longitude,
-        pci: this.state.defectData[index].pci,
-        selectedData: this.state.defectData[index],
-        isVideoClicked: true,
-        // isActive: this.state.isActive - 1,
-        endPointCount:index,
-        count: index},
-        () => console.log(`back, count=${this.state.count}`) );
-    }
-  }
-
-  //go to the next photo
-  goNext = () => {
-    if (this.state.count < this.state.defectData.length && this.state.count >= 0){
-      let index = this.state.count + 1;
-      this.setState({
-        editId: this.state.defectData[index].id,
-        date_time: this.state.defectData[index].date_time,
-        type: this.state.defectData[index].type,
-        url: this.state.defectData[index].url,
-        accelerometer: this.state.defectData[index].accelerometer,
-        device_serial_number: this.state.defectData[index].device_serial_number,
-        heading: this.state.defectData[index].heading,
-        image: this.state.defectData[index].image,
-        latitude: this.state.defectData[index].latitude,
-        longitude: this.state.defectData[index].longitude,
-        pci: this.state.defectData[index].pci,
-        selectedData: this.state.defectData[index],
-        isVideoClicked: true,
-        // isActive: this.state.isActive + 1,
-        endPointCount:index,
-        count: index}, 
-        () => console.log(`next, count=${this.state.count}`));
-        if (this.state.good !== false || this.state.fair !== false || this.state.poor !== false) {
-          this.handleSubmit();
-        }
-    }
-  }
-
   render() {
     const { classes } = this.props;
     return (
@@ -561,7 +548,7 @@ class Home extends React.Component {
               direction="row"
             >
               {/* Right Layout with video player & information Grid */}
-              <Grid item xs={12} sm={12} md={6} lg={5}>
+              <Grid item xs={12} sm={12} md={12} lg={7}>
                 <Box className={classes.mainRight}>
                   {
                     (this.state.isVideoClicked) ? (
@@ -572,7 +559,7 @@ class Home extends React.Component {
                         autoPlay
                         poster={this.state.selectedData.url}
                       >
-                        <source src={this.state.selectedData.url.includes("@") ? "" : this.state.selectedData.url} type="video/mp4" />
+                        <source src={this.state.selectedData.url} type="video/mp4" />
                         Your browser does not support HTML5 video.
                       </video>
                     ) : (
@@ -592,7 +579,7 @@ class Home extends React.Component {
               </Grid>
 
               {/* Left Layout with Table Grid */}
-              <Grid item xs={12} sm={6} md={6} lg={7}>
+              <Grid item xs={12} sm={12} md={12} lg={5}>
                 <Box className={classes.mainLeft}>
                   {/* Search & Add Area */}
                   <Grid
@@ -616,159 +603,65 @@ class Home extends React.Component {
                             onChange={this.handleSearchChange.bind(this)}
                           />
                         </Grid>
-                      </Grid>
-                    </div>
-                    {/* <div className={classes.searchArea}>
-                      <Grid container spacing={1}>
                         <Grid item>
-                          <Button
-                            style={{ marginRight: '5px' }}
-                            variant="contained"
-                            color="primary"
-                            onClick={this.sequentialPlayImage.bind(this)}
+                          <Select
+                            fullWidth
+                            labelId="demo-simple-select-outlined-label"
+                            id="demo-simple-select-outlined"
+                            name="type"
+                            value={this.state.numberOfDays}
+                            onChange={event => this.handleChange(event.target.value)}
                           >
-                            Start
-                          </Button>
+                            <MenuItem value="1">Today</MenuItem>
+                            <MenuItem value="2">Yesterday</MenuItem>
+                            <MenuItem value="3">2 days ago</MenuItem>
+                            <MenuItem value="4">3 days ago</MenuItem>
+                            <MenuItem value="5">4 days ago</MenuItem>
+                            <MenuItem value="6">All days</MenuItem>
+                          </Select>
                         </Grid>
                       </Grid>
-                    </div> */}
+                    </div>
                   </Grid>
                   {/*End Search & Add Area */}
                   {/* Data Table */}
                   <Grid item xs={12} xm={6}>
-                  {
-                    this.state.loading ? <CircularProgress color="secondary" /> : (
-                      <TableContainer component={Paper} className={classes.table}>
-                        <Table aria-label="caption table">
-                          <TableHead>
-                            <TableRow className={classes.tableHeader}>
-                              <TableCell className={classes.tableHeaderFont} align="center">Action</TableCell>
-                              <TableCell className={classes.tableHeaderFont} align="center" onClick={this.toggletypeSorting.bind(this)}>Type</TableCell>
-                              <TableCell className={classes.tableHeaderFont} align="center" onClick={this.togglepciSorting.bind(this)}>PCI</TableCell>
-                              <TableCell className={classes.tableHeaderFont} align="center" onClick={this.toggletimeTextSorting.bind(this)}>Time</TableCell>
-                            </TableRow>
-                          </TableHead>
-                          <TableBody>
-                            {
-                              this.state.defectData.filter(searchingFor(this.state.searchTerm)).map((item, index) => {
-                                return <DataItem
-                                  key={item.id}
-                                  type={item.type}
-                                  date_time={item.date_time}
-                                  url={item.url}
-                                  pci={item.pci}
-                                  edit={this.editItem.bind(this, index)}
-                                  delete={this.deleteItem.bind(this, index)}
-                                  play={this.playItem.bind(this, index)}
-                                  isActive={this.state.isActive}
-                                  index={index}
-                                />
-                              })
-                            }
-                          </TableBody>
-                          {/* Edit dialog box */}
-                          {/* <Dialog
-                            fullWidth
-                            open={this.state.editDialog}
-                            onClose={this.state.handleEditDialogToggle}>
-                            <DialogTitle>
-                              Edit Information
-                              <Button
-                                style={{ marginLeft: '15px' }}
-                                variant="contained"
-                                color="primary"
-                                onClick={this.sequentialPlayImage.bind(this)}
-                              >Start</Button>
-                              <Button
-                                style={{ marginLeft: '15px' }}
-                                variant="contained"
-                                color="secondary"
-                                onClick={this.stopSequentialPlay.bind(this)}
-                              >Stop</Button>
-                            </DialogTitle>
-                            <DialogContent>
-                              <InputLabel
-                                id="demo-simple-select-outlined-label"
-                              >Defect Type</InputLabel>
-                              <Select
-                                fullWidth
-                                labelId="demo-simple-select-outlined-label"
-                                id="demo-simple-select-outlined"
-                                name="type"
-                                value={this.state.type}
-                                onChange={event => this.handleChange(event.target.value)}
-                              ><br />
-                                <MenuItem value="(P)Pothole paved surface">(P)Pothole paved surface</MenuItem>
-                                <MenuItem value="(PN)Pothole non-paved">(PN)Pothole non-paved</MenuItem>
-                                <MenuItem value="(PS)Pothole shoulder">(PS)Pothole shoulder</MenuItem>
-                                <MenuItem value="(SD)Shoulder Drop-off">(SD)Shoulder Drop-off</MenuItem>
-                                <MenuItem value="(C)Crack">(C)Crack</MenuItem>
-                                <MenuItem value="(D)Debris">(D)Debris</MenuItem>
-                                <MenuItem value="(B)Bridge Deck Spall">(B)Bridge Deck Spall</MenuItem>
-                                <MenuItem value="(RD)Road Discontinuity">(RD)Road Discontinuity</MenuItem>
-                                <MenuItem value="default">Default</MenuItem>
-                              </Select><br /><br />
-                              <InputLabel
-                                id="demo-simple-select-outlined-label"
-                              >PCI</InputLabel>
-                              <Select
-                                fullWidth
-                                labelId="demo-simple-select-outlined-label"
-                                id="demo-simple-select-outlined"
-                                name="pci"
-                                value={this.state.pci}
-                                onChange={event => this.handlePCIChange(event.target.value)}
-                              ><br />
-                                <MenuItem value="good">Good</MenuItem>
-                                <MenuItem value="fair">Fair</MenuItem>
-                                <MenuItem value="poor">Poor</MenuItem>
-                              </Select><br /><br />
-                              <TextField
-                                fullWidth
-                                label="Time"
-                                type="text"
-                                name="timeText"
-                                value={this.state.date_time}
-                                InputProps={{
-                                  readOnly: true,
-                                }}
-                                onChange={this.handleValueChange} /><br />
-                              <br />
+                    {
+                      this.state.loading ? <CircularProgress color="secondary" /> : (
+                        <TableContainer component={Paper} className={classes.table}>
+                          <Table aria-label="caption table">
+                            <TableHead>
+                              <TableRow className={classes.tableHeader}>
+                                <TableCell className={classes.tableHeaderFont} align="center">Action</TableCell>
+                                <TableCell className={classes.tableHeaderFont} align="center" onClick={this.toggletypeSorting.bind(this)}>Type</TableCell>
+                                <TableCell className={classes.tableHeaderFont} align="center" onClick={this.togglepciSorting.bind(this)}>PCI</TableCell>
+                                <TableCell className={classes.tableHeaderFont} align="center" onClick={this.toggletimeTextSorting.bind(this)}>Time</TableCell>
+                              </TableRow>
+                            </TableHead>
+                            <TableBody>
+                              {/* edit={this.editItem.bind(this, index)} */}
                               {
-                                (this.state.isVideoClicked) ? (
-                                  <video
-                                    key={this.state.selectedData.url}
-                                    className={classes.videoFrame}
-                                    controls
-                                    autoPlay
-                                    poster={this.state.selectedData.url}
-                                  >
-                                    <source src={this.state.selectedData.url.includes("@") ? "" : this.state.selectedData.url} type="video/mp4" />
-                                    Your browser does not support HTML5 video.
-                                  </video>
-                                ) : (
-                                    <video controls className={classes.videoFrame}>
-                                      <source src={null} type="video/mp4" />
-                                      Your browser does not support HTML5 video.
-                                    </video>
-                                  )
+                                this.state.defectData.filter(searchingFor(this.state.searchTerm)).map((item, index) => {
+                                  return <DataItem
+                                    key={item.id}
+                                    type={item.type}
+                                    date_time={item.date_time}
+                                    url={item.url}
+                                    pci={item.pci}
+                                    delete={this.deleteItem.bind(this, index)}
+                                    play={this.playItem.bind(this, index)}
+                                    isActive={this.state.isActive}
+                                    index={index}
+                                  />
+                                })
                               }
-                            </DialogContent>
-                            <DialogContent>
-                              <Button fullWidth className={classes.buttonArea} variant="contained" color="primary" onClick={this.handleSubmit}>Edit</Button>
-                              {
-                                this.state.isPlaying ? (<Button fullWidth disabled className={classes.buttonArea} variant="outlined" color="primary" onClick={this.handleEditDialogToggle}>Close</Button>) :
-                                (<Button fullWidth className={classes.buttonArea} variant="outlined" color="primary" onClick={this.handleEditDialogToggle}>Close</Button>)
-                              }
-                            </DialogContent>
-                          </Dialog> */}
-                        </Table>
-                      </TableContainer>
-                    )
-                  }
+                            </TableBody>
+                          </Table>
+                        </TableContainer>
+                      )
+                    }
                   </Grid>
                   <Grid item xs={12} xm={12}>
-                    Edit Information
                     <Button
                       style={{ marginLeft: '15px' }}
                       variant="contained"
@@ -781,113 +674,85 @@ class Home extends React.Component {
                       color="secondary"
                       onClick={this.goNext}
                     >Next</Button>
+                  </Grid>
+                  <Grid item xs={12} xm={12}>
+                    Edit Information
+
                     <Grid>
-                    <FormControl component="fieldset" className="classes.formControl">
-                      <FormGroup>
-                        <Grid container direction="row">
-                          <Grid item xs={6} xm={6}>
-                            <FormLabel
-                              id="demo-simple-select-outlined-label"
-                            >Defect Type</FormLabel>
-                            <FormControlLabel
-                              control={<Checkbox checked={this.state.potholeP} onChange={this.handleCheckboxChange("potholeP")} value="(P)Pothole paved surface"  />}
-                              label="(P)Pothole paved surface"
-                            />
-                            <FormControlLabel
-                              control={<Checkbox checked={this.state.potholeNP} onChange={this.handleCheckboxChange("potholeNP")} value="(PN)Pothole non-paved"  />}
-                              label="(PN)Pothole non-paved"
-                            />
-                            <FormControlLabel
-                              control={<Checkbox checked={this.state.potholeS} onChange={this.handleCheckboxChange("potholeS")} value="(PS)Pothole shoulder"  />}
-                              label="(PS)Pothole shoulder"
-                            />
-                            <FormControlLabel
-                              control={<Checkbox checked={this.state.shoulderDO} onChange={this.handleCheckboxChange("shoulderDO")} value="(SD)Shoulder Drop-off"  />}
-                              label="(SD)Shoulder Drop-off"
-                            />
-                            <FormControlLabel
-                              control={<Checkbox checked={this.state.crack} onChange={this.handleCheckboxChange("crack")} value="(C)Crack"  />}
-                              label="(C)Crack"
-                            />
-                            <FormControlLabel
-                              control={<Checkbox checked={this.state.debris} onChange={this.handleCheckboxChange("debris")} value="(D)Debris"  />}
-                              label="(D)Debris"
-                            />
-                            <FormControlLabel
-                              control={<Checkbox checked={this.state.bridge} onChange={this.handleCheckboxChange("bridge")} value="(B)Bridge Deck Spall"  />}
-                              label="(B)Bridge Deck Spall"
-                            />
-                            <FormControlLabel
-                              control={<Checkbox checked={this.state.discontinuity} onChange={this.handleCheckboxChange("discontinuity")} value="(RD)Road Discontinuity"  />}
-                              label="(RD)Road Discontinuity"
-                            />
-                            <FormControlLabel
-                              control={<Checkbox checked={this.state.default} onChange={this.handleCheckboxChange("default")} value="default"  />}
-                              label="default"
-                            />
+                      <FormControl component="fieldset" className="classes.formControl">
+                        <FormGroup>
+                          <Grid container direction="row">
+                            <Grid item xs={6} xm={6}>
+                              <FormLabel
+                                id="demo-simple-select-outlined-label"
+                              >Defect Type</FormLabel>
+                              <FormControlLabel
+                                control={<Checkbox checked={this.state.potholeP} onChange={this.handleCheckboxChange("potholeP")} value="(P)Pothole paved surface" />}
+                                label="(P)Pothole paved surface"
+                              />
+                              <FormControlLabel
+                                control={<Checkbox checked={this.state.potholeNP} onChange={this.handleCheckboxChange("potholeNP")} value="(PN)Pothole non-paved" />}
+                                label="(PN)Pothole non-paved"
+                              />
+                              <FormControlLabel
+                                control={<Checkbox checked={this.state.potholeS} onChange={this.handleCheckboxChange("potholeS")} value="(PS)Pothole shoulder" />}
+                                label="(PS)Pothole shoulder"
+                              />
+                              <FormControlLabel
+                                control={<Checkbox checked={this.state.shoulderDO} onChange={this.handleCheckboxChange("shoulderDO")} value="(SD)Shoulder Drop-off" />}
+                                label="(SD)Shoulder Drop-off"
+                              />
+                              <FormControlLabel
+                                control={<Checkbox checked={this.state.crack} onChange={this.handleCheckboxChange("crack")} value="(C)Crack" />}
+                                label="(C)Crack"
+                              />
+                              <FormControlLabel
+                                control={<Checkbox checked={this.state.debris} onChange={this.handleCheckboxChange("debris")} value="(D)Debris" />}
+                                label="(D)Debris"
+                              />
+                              <FormControlLabel
+                                control={<Checkbox checked={this.state.bridge} onChange={this.handleCheckboxChange("bridge")} value="(B)Bridge Deck Spall" />}
+                                label="(B)Bridge Deck Spall"
+                              />
+                              <FormControlLabel
+                                control={<Checkbox checked={this.state.discontinuity} onChange={this.handleCheckboxChange("discontinuity")} value="(RD)Road Discontinuity" />}
+                                label="(RD)Road Discontinuity"
+                              />
+                              <FormControlLabel
+                                control={<Checkbox checked={this.state.default} onChange={this.handleCheckboxChange("default")} value="default" />}
+                                label="default"
+                              />
+                            </Grid>
+                            <Grid item xs={6} xm={6}>
+                              <FormLabel
+                                id="demo-simple-select-outlined-label"
+                              >PCI</FormLabel>
+                              <FormControlLabel
+                                control={<Checkbox checked={this.state.good} onChange={this.handlePCIChange('good')} value="Good" />}
+                                label="Good"
+                              />
+                              <FormControlLabel
+                                control={<Checkbox checked={this.state.fair} onChange={this.handlePCIChange('fair')} value="Fair" />}
+                                label="Fair"
+                              />
+                              <FormControlLabel
+                                control={<Checkbox checked={this.state.poor} onChange={this.handlePCIChange('poor')} value="Poor" />}
+                                label="Poor"
+                              />
+                            </Grid>
+
                           </Grid>
-                          <Grid item xs={6} xm={6}>
-                            <FormLabel
-                              id="demo-simple-select-outlined-label"
-                            >PCI</FormLabel>
-                            <FormControlLabel
-                              control={<Checkbox checked={this.state.good} onChange={this.handlePCIChange('good')} value="Good"  />}
-                              label="Good"
-                            />
-                            <FormControlLabel
-                              control={<Checkbox checked={this.state.fair} onChange={this.handlePCIChange('fair')} value="Fair"  />}
-                              label="Fair"
-                            />
-                            <FormControlLabel
-                              control={<Checkbox checked={this.state.poor} onChange={this.handlePCIChange('poor')} value="Poor"  />}
-                              label="Poor"
-                            />
-                          </Grid>
-                        {/* <Select
-                          fullWidth
-                          labelId="demo-simple-select-outlined-label"
-                          id="demo-simple-select-outlined"
-                          name="type"
-                          value={this.state.type}
-                          onChange={event => this.handleChange(event.target.value)}
-                        ><br />
-                          <MenuItem value="(P)Pothole paved surface">(P)Pothole paved surface</MenuItem>
-                          <MenuItem value="(PN)Pothole non-paved">(PN)Pothole non-paved</MenuItem>
-                          <MenuItem value="(PS)Pothole shoulder">(PS)Pothole shoulder</MenuItem>
-                          <MenuItem value="(SD)Shoulder Drop-off">(SD)Shoulder Drop-off</MenuItem>
-                          <MenuItem value="(C)Crack">(C)Crack</MenuItem>
-                          <MenuItem value="(D)Debris">(D)Debris</MenuItem>
-                          <MenuItem value="(B)Bridge Deck Spall">(B)Bridge Deck Spall</MenuItem>
-                          <MenuItem value="(RD)Road Discontinuity">(RD)Road Discontinuity</MenuItem>
-                          <MenuItem value="default">Default</MenuItem>
-                        </Select><br /><br /> */}
-                        {/* <InputLabel
-                          id="demo-simple-select-outlined-label"
-                        >PCI</InputLabel>
-                        <Select
-                          fullWidth
-                          labelId="demo-simple-select-outlined-label"
-                          id="demo-simple-select-outlined"
-                          name="pci"
-                          value={this.state.pci}
-                          onChange={event => this.handlePCIChange(event.target.value)}
-                        ><br />
-                          <MenuItem value="good">Good</MenuItem>
-                          <MenuItem value="fair">Fair</MenuItem>
-                          <MenuItem value="poor">Poor</MenuItem>
-                        </Select><br /><br /> */}
-                        </Grid>
-                      </FormGroup>
-                    </FormControl>
+                        </FormGroup>
+                      </FormControl>
                     </Grid>
-                </Grid>
+                  </Grid>
 
                   {/*End Data Table */}
                 </Box>
               </Grid>
               {/* End Left Layout with Table Grid */}
 
-              
+
               {/* End Right Layout with video player & information Grid */}
             </Grid>
           </div>

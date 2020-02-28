@@ -3,7 +3,6 @@ import TableCell from '@material-ui/core/TableCell';
 import TableRow from '@material-ui/core/TableRow';
 import IconButton from '@material-ui/core/IconButton';
 import DeleteIcon from '@material-ui/icons/Delete';
-import EditIcon from '@material-ui/icons/Edit';
 import PlayArrowIcon from '@material-ui/icons/PlayArrow';
 
 class DataItem extends Component {
@@ -24,12 +23,12 @@ class DataItem extends Component {
                 }
             >
                 <TableCell align="center" >
-                    <IconButton style={
+                    {/* <IconButton style={
                         this.props.isActive === this.props.index ? { color: 'white' } : { color: '#3F51B5' } } aria-label="edit" onClick={this.props.edit}>
                         <EditIcon
                             size="medium"
                         />
-                    </IconButton>
+                    </IconButton> */}
                     <IconButton style={
                         this.props.isActive === this.props.index ? { color: 'white' } : { color: '#3F51B5' }} aria-label="delete" onClick={this.props.delete}>
                         <DeleteIcon
