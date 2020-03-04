@@ -57,7 +57,6 @@ const useStyles = theme => ({
     minWidth: 300,
     height: 300,
     backgroundColor: '#e8eaf6',
-
   },
 
   tableHeader: {
@@ -94,6 +93,8 @@ function searchingFor(searchTerm) {
       x.type.toLowerCase().includes(searchTerm.toLowerCase())
       || x.date_time.toLowerCase().includes(searchTerm.toLowerCase())
       || x.pci.toLowerCase().includes(searchTerm.toLowerCase())
+      || x.city_name.toLowerCase().includes(searchTerm.toLowerCase())
+      || x.device_serial_number.toLowerCase().includes(searchTerm.toLowerCase())
     ) {
       return true;
     }
@@ -111,10 +112,12 @@ class Home extends React.Component {
     this.state = {
       defectData: [],
       entireDefectData: [],
+      searchDataMaxIndex: 0,
       selectedData: null,
       isVideoClicked: false,
       isActive: '',
       searchTerm: '',
+      hasDefect: '0',
       accelerometer: [],
       device_serial_number: '',
       selectedDefectData: [],
@@ -126,9 +129,11 @@ class Home extends React.Component {
       heading: '',
       image: '',
       pci: '',
+      city_name: '',
       editId: '',
       loading: true,
       typeSort: true,
+      citySort: true,
       dateTimeSort: false,
       pciSort: true,
       tempList: [],
@@ -262,10 +267,11 @@ class Home extends React.Component {
           latitude: this.state.defectData[index].latitude,
           longitude: this.state.defectData[index].longitude,
           pci: this.state.defectData[index].pci,
+          city_name: this.state.defectData[index].city_name,
           selectedData: this.state.defectData[index],
           isVideoClicked: true,
           isActive: index,
-        }, () => console.log('First index 0', this.state.defectData[index]));
+        });
       }
     })
   }
@@ -276,63 +282,101 @@ class Home extends React.Component {
     var today = this.convertDate(new Date()); //get format YYYY-mm-dd
     switch (this.state.numberOfDays) {
       case '1':
-        this.state.entireDefectData.map((data) => {
+        this.state.entireDefectData.forEach((data) => {
           let tempDate = this.convertDate(new Date(data.date_time));  //get format YYYY-mm-dd
-          if (tempDate === today) {
-            filterData.push(data);
+          if (this.state.hasDefect === '0') {
+            if (tempDate === today && data.type === 'Default') {
+              filterData.push(data);
+            }
+          } else if (this.state.hasDefect === '1') {
+            if (tempDate === today && data.type !== 'Default') {
+              filterData.push(data);
+            }
           }
         })
         this.selectFirstRow();
-        this.setState({ defectData: filterData });
-        return this.selectFirstRow();
+        return this.setState({ defectData: filterData });
       case '2':
         let yesterday = this.convertDate(new Date(new Date().setDate(new Date().getDate() - 1)));
-        this.state.entireDefectData.map((data) => {
+        this.state.entireDefectData.forEach((data) => {
           let tempDate = this.convertDate(new Date(data.date_time));  //get format YYYY-mm-dd
-          if (tempDate === yesterday) {
-            filterData.push(data);
+          if (this.state.hasDefect === '0') {
+            if (tempDate === yesterday && data.type === 'Default') {
+              filterData.push(data);
+            }
+          } else if (this.state.hasDefect === '1') {
+            if (tempDate === yesterday && data.type !== 'Default') {
+              filterData.push(data);
+            }
           }
         })
         this.selectFirstRow();
         return this.setState({ defectData: filterData });
       case '3':
         let twoDaysAgo = this.convertDate(new Date(new Date().setDate(new Date().getDate() - 2)));
-        this.state.entireDefectData.map((data) => {
+        this.state.entireDefectData.forEach((data) => {
           let tempDate = this.convertDate(new Date(data.date_time));  //get format YYYY-mm-dd
-          if (tempDate === twoDaysAgo) {
-            filterData.push(data);
+          if (this.state.hasDefect === '0') {
+            if (tempDate === twoDaysAgo && data.type.toLowerCase() === 'default') {
+              filterData.push(data);
+            }
+          } else if (this.state.hasDefect === '1') {
+            if (tempDate === twoDaysAgo && data.type.toLowerCase() !== 'default') {
+              filterData.push(data);
+            }
           }
         })
         this.selectFirstRow();
         return this.setState({ defectData: filterData });
       case '4':
         let threeDaysAgo = this.convertDate(new Date(new Date().setDate(new Date().getDate() - 3)));
-        this.state.entireDefectData.map((data) => {
+        this.state.entireDefectData.forEach((data) => {
           let tempDate = this.convertDate(new Date(data.date_time));  //get format YYYY-mm-dd
-          if (tempDate === threeDaysAgo) {
-            filterData.push(data);
+          if (this.state.hasDefect === '0') {
+            if (tempDate === threeDaysAgo && data.type.toLowerCase() === 'default') {
+              filterData.push(data);
+            }
+          } else if (this.state.hasDefect === '1') {
+            if (tempDate === threeDaysAgo && data.type.toLowerCase() !== 'default') {
+              filterData.push(data);
+            }
           }
         })
         this.selectFirstRow();
         return this.setState({ defectData: filterData });
       case '5':
         let fourDaysAgo = this.convertDate(new Date(new Date().setDate(new Date().getDate() - 4)));
-        this.state.entireDefectData.map((data) => {
+        this.state.entireDefectData.forEach((data) => {
           let tempDate = this.convertDate(new Date(data.date_time));  //get format YYYY-mm-dd
-          if (tempDate === fourDaysAgo) {
-            filterData.push(data);
+          if (this.state.hasDefect === '0') {
+            if (tempDate === fourDaysAgo && data.type.toLowerCase() === 'default') {
+              filterData.push(data);
+            }
+          } else if (this.state.hasDefect === '1') {
+            if (tempDate === fourDaysAgo && data.type.toLowerCase() !== 'default') {
+              filterData.push(data);
+            }
           }
         })
         this.selectFirstRow();
         return this.setState({ defectData: filterData });
       case '6':
+        this.state.entireDefectData.forEach((data) => {
+          if (this.state.hasDefect === '0') {
+            if (data.type.toLowerCase() === 'default') {
+              filterData.push(data);
+            }
+          } else if (this.state.hasDefect === '1') {
+            if (data.type.toLowerCase() !== 'default') {
+              filterData.push(data);
+            }
+          }
+        })
         this.selectFirstRow();
-        return this.setState({ defectData: this.state.entireDefectData });
+        return this.setState({ defectData: filterData });
       default:
         return null;
     }
-
-
   }
 
 
@@ -363,13 +407,20 @@ class Home extends React.Component {
     this.setState({ numberOfDays: value }, () => this.filterByDay());
   }
 
+  handleHasDefectChange(value) {
+    this.setState({ hasDefect: value }, () => this.filterByDay());
+  }
+
   //change to function to work with check boxes
   handlePCIChange = name => event => {
     this.setState({ ...this.state, [name]: event.target.checked, pci: event.target.value }, () => console.log(this.state.pci));
   }
 
   handleSearchChange(e) {
-    this.setState({ searchTerm: e.target.value });
+
+    this.setState({ searchTerm: e.target.value, count: 0 }, () => {
+      this.selectFirstRow();
+    });
   }
 
   // sort by date_time
@@ -397,8 +448,36 @@ class Home extends React.Component {
           return 0;
         }),
         typeSort: !this.state.typeSort,
-        page: 1,
-      }, () => this.pagination(this.state.defectData, this.state.page, this.state.rows));
+      });
+    }
+  }
+
+  // sort by date_time
+  toggleCitySorting() {
+    if (this.state.citySort) {
+      //asc
+      this.setState({
+        defectData: this.state.defectData.sort(function (a, b) {
+          let x = a.city_name.toLowerCase();
+          let y = b.city_name.toLowerCase();
+          if (x < y) { return -1; }
+          if (x > y) { return 1; }
+          return 0;
+        }),
+        citySort: !this.state.citySort,
+      });
+    } else {
+      //desc
+      this.setState({
+        defectData: this.state.defectData.sort(function (a, b) {
+          let x = a.city_name.toLowerCase();
+          let y = b.city_name.toLowerCase();
+          if (x > y) { return -1; }
+          if (x < y) { return 1; }
+          return 0;
+        }),
+        citySort: !this.state.citySort,
+      });
     }
   }
 
@@ -460,7 +539,7 @@ class Home extends React.Component {
 
   //go to pervous photo
   goBack = () => {
-    console.log(`going back`);
+
     if (this.state.count < this.state.defectData.length && this.state.count > 0) {
       let index = this.state.count - 1;
       this.setState({
@@ -475,6 +554,7 @@ class Home extends React.Component {
         latitude: this.state.defectData[index].latitude,
         longitude: this.state.defectData[index].longitude,
         pci: this.state.defectData[index].pci,
+        city_name: this.state.defectData[index].city_name,
         selectedData: this.state.defectData[index],
         isVideoClicked: true,
         isActive: index,
@@ -500,16 +580,13 @@ class Home extends React.Component {
         latitude: this.state.defectData[index].latitude,
         longitude: this.state.defectData[index].longitude,
         pci: this.state.defectData[index].pci,
+        city_name: this.state.defectData[index].city_name,
         selectedData: this.state.defectData[index],
         isVideoClicked: true,
         isActive: index,
         endPointCount: index,
         count: index,
-      },
-        () => {
-          // console.log(`next, count=${this.state.count}`)
-          console.log('NEXT:', this.state.defectData[this.state.count])
-        });
+      });
 
       if (this.state.good !== false || this.state.fair !== false || this.state.poor !== false) {
         this.handleSubmit();
@@ -529,6 +606,7 @@ class Home extends React.Component {
       longitude: this.state.longitude,
       url: this.state.url,
       pci: this.state.pci,
+      city_name: this.state.city_name,
     }
 
     //REST API POST request
@@ -620,6 +698,19 @@ class Home extends React.Component {
                             <MenuItem value="6">All days</MenuItem>
                           </Select>
                         </Grid>
+                        <Grid item>
+                          <Select
+                            fullWidth
+                            labelId="demo-simple-select-outlined-label"
+                            id="demo-simple-select-outlined"
+                            name="hasDefect"
+                            value={this.state.hasDefect}
+                            onChange={event => this.handleHasDefectChange(event.target.value)}
+                          >
+                            <MenuItem value="0">Default</MenuItem>
+                            <MenuItem value="1">Has Defect</MenuItem>
+                          </Select>
+                        </Grid>
                       </Grid>
                     </div>
                   </Grid>
@@ -635,6 +726,7 @@ class Home extends React.Component {
                                 <TableCell className={classes.tableHeaderFont} align="center">Action</TableCell>
                                 <TableCell className={classes.tableHeaderFont} align="center" onClick={this.toggletypeSorting.bind(this)}>Type</TableCell>
                                 <TableCell className={classes.tableHeaderFont} align="center" onClick={this.togglepciSorting.bind(this)}>PCI</TableCell>
+                                <TableCell className={classes.tableHeaderFont} align="center" onClick={this.toggleCitySorting.bind(this)}>City</TableCell>
                                 <TableCell className={classes.tableHeaderFont} align="center" onClick={this.toggletimeTextSorting.bind(this)}>Time</TableCell>
                               </TableRow>
                             </TableHead>
@@ -642,12 +734,14 @@ class Home extends React.Component {
                               {/* edit={this.editItem.bind(this, index)} */}
                               {
                                 this.state.defectData.filter(searchingFor(this.state.searchTerm)).map((item, index) => {
+
                                   return <DataItem
                                     key={item.id}
                                     type={item.type}
                                     date_time={item.date_time}
                                     url={item.url}
                                     pci={item.pci}
+                                    city_name={item.city_name}
                                     delete={this.deleteItem.bind(this, index)}
                                     play={this.playItem.bind(this, index)}
                                     isActive={this.state.isActive}

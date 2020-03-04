@@ -8,9 +8,6 @@ import PlayArrowIcon from '@material-ui/icons/PlayArrow';
 class DataItem extends Component {
     constructor(props) {
         super(props);
-        this.state = {
-
-        }
     }
     //function goes here
     render() {
@@ -43,7 +40,7 @@ class DataItem extends Component {
                             />
                         </IconButton> : ""}
                 </TableCell >
-                
+
                 <TableCell style={
                     this.props.isActive === this.props.index ? { color: 'white' } : {}
                 } align="center">{this.props.type}</TableCell >
@@ -51,7 +48,11 @@ class DataItem extends Component {
                 <TableCell style={
                     this.props.isActive === this.props.index ? { color: 'white' } : {}
                 } align="center">{this.props.pci}</TableCell >
-                
+
+                <TableCell style={
+                    this.props.isActive === this.props.index ? { color: 'white' } : {}
+                } align="center">{this.props.city_name}</TableCell >
+
                 <TableCell style={
                     this.props.isActive === this.props.index ? { color: 'white' } : {}
                 } align="center">{this.props.date_time}</TableCell >
