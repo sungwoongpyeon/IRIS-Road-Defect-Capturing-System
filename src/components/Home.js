@@ -130,6 +130,7 @@ class Home extends React.Component {
       image: '',
       pci: '',
       city_name: '',
+      session_id: '',
       editId: '',
       loading: true,
       typeSort: true,
@@ -268,6 +269,7 @@ class Home extends React.Component {
           longitude: this.state.defectData[index].longitude,
           pci: this.state.defectData[index].pci,
           city_name: this.state.defectData[index].city_name,
+          session_id: this.state.defectData[index].session_id,
           selectedData: this.state.defectData[index],
           isVideoClicked: true,
           isActive: index,
@@ -417,7 +419,6 @@ class Home extends React.Component {
   }
 
   handleSearchChange(e) {
-
     this.setState({ searchTerm: e.target.value, count: 0 }, () => {
       this.selectFirstRow();
     });
@@ -555,12 +556,13 @@ class Home extends React.Component {
         longitude: this.state.defectData[index].longitude,
         pci: this.state.defectData[index].pci,
         city_name: this.state.defectData[index].city_name,
+        session_id: this.state.defectData[index].session_id,
         selectedData: this.state.defectData[index],
         isVideoClicked: true,
         isActive: index,
         endPointCount: index,
         count: index
-      }, () => console.log('BACK:', this.state.defectData[this.state.count]));
+      });
     }
   }
 
@@ -581,6 +583,7 @@ class Home extends React.Component {
         longitude: this.state.defectData[index].longitude,
         pci: this.state.defectData[index].pci,
         city_name: this.state.defectData[index].city_name,
+        session_id: this.state.defectData[index].session_id,
         selectedData: this.state.defectData[index],
         isVideoClicked: true,
         isActive: index,
@@ -607,6 +610,7 @@ class Home extends React.Component {
       url: this.state.url,
       pci: this.state.pci,
       city_name: this.state.city_name,
+      session_id: this.state.session_id,
     }
 
     //REST API POST request
@@ -734,19 +738,19 @@ class Home extends React.Component {
                               {/* edit={this.editItem.bind(this, index)} */}
                               {
                                 this.state.defectData.filter(searchingFor(this.state.searchTerm)).map((item, index) => {
-
+                                  
                                   return <DataItem
-                                    key={item.id}
-                                    type={item.type}
-                                    date_time={item.date_time}
-                                    url={item.url}
-                                    pci={item.pci}
-                                    city_name={item.city_name}
-                                    delete={this.deleteItem.bind(this, index)}
-                                    play={this.playItem.bind(this, index)}
-                                    isActive={this.state.isActive}
-                                    index={index}
-                                  />
+                                  key={item.id}
+                                  type={item.type}
+                                  date_time={item.date_time}
+                                  url={item.url}
+                                  pci={item.pci}
+                                  city_name={item.city_name}
+                                  delete={this.deleteItem.bind(this, index)}
+                                  play={this.playItem.bind(this, index)}
+                                  isActive={this.state.isActive}
+                                  index={index}
+                                />
                                 })
                               }
                             </TableBody>
